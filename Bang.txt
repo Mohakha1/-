@@ -1,0 +1,184 @@
+-- المتغيرات
+local SimpleSexGUI = Instance.new("ScreenGui")
+local FGUI = Instance.new("Frame")
+local btnSex = Instance.new("TextButton")
+local tbxVictim = Instance.new("TextBox")
+local lblFUCKEMALL = Instance.new("TextLabel")
+local lbltitle = Instance.new("TextLabel")
+local Notification = Instance.new("TextLabel")
+local CreditsLabel = Instance.new("TextLabel")
+local CloseButton = Instance.new("TextButton")
+
+-- حالة السكربت
+local isScriptActive = false
+local animationInstance
+local playerConnection
+
+-- دالة للبحث عن لاعب بواسطة اسمه الحقيقي أو اسم العرض جزئياً
+local function findPlayerByPartialName(partialName)
+    partialName = partialName:lower()
+    for _, player in pairs(game.Players:GetPlayers()) do
+        if player.Name:lower():find(partialName) or player.DisplayName:lower():find(partialName) then
+            return player
+        end
+    end
+    return nil
+end
+
+-- دالة لتنفيذ فعل "الجماع"
+local function performFuckingAction(targetPlayer)
+    local stupid = Instance.new('Animation')
+    stupid.AnimationId = 'rbxassetid://148840371'
+    local hummy = game.Players.LocalPlayer.Character:WaitForChild("Humanoid")
+    local rootPart = game.Players.LocalPlayer.Character:WaitForChild("HumanoidRootPart")
+
+    pcall(function() hummy.Parent.Pants:Destroy() end)
+    pcall(function() hummy.Parent.Shirt:Destroy() end)
+
+    animationInstance = hummy:LoadAnimation(stupid)
+    animationInstance:Play()
+    animationInstance:AdjustSpeed(10)
+
+    playerConnection = hummy.Died:Connect(function()
+        isScriptActive = false
+        btnSex.Text = "لنبدأ الجماع!!"
+        if animationInstance then animationInstance:Stop() end
+        if playerConnection then playerConnection:Disconnect() end
+    end)
+
+    while wait() do
+        if hummy.Health > 0 and hummy.Parent.Parent ~= nil and isScriptActive then
+            rootPart.CFrame = targetPlayer.Character:WaitForChild("HumanoidRootPart").CFrame * CFrame.new(0, 0, 1)
+        else
+            break
+        end
+    end
+end
+
+-- الخصائص
+SimpleSexGUI.Name = "SimpleSexGUI"
+SimpleSexGUI.Parent = game.CoreGui
+
+FGUI.Name = "FGUI"
+FGUI.Parent = SimpleSexGUI
+FGUI.BackgroundColor3 = Color3.new(0, 0, 0)
+FGUI.BorderSizePixel = 0
+FGUI.Position = UDim2.new(0.5, -100, 0.5, -75)
+FGUI.Size = UDim2.new(0, 200, 0, 150)
+FGUI.Active = true
+FGUI.Draggable = true
+
+lbltitle.Name = "Title"
+lbltitle.Parent = FGUI
+lbltitle.BackgroundColor3 = Color3.new(1, 1, 1)
+lbltitle.BorderSizePixel = 0
+lbltitle.Position = UDim2.new(0, 0, 0, 0)
+lbltitle.Size = UDim2.new(1, 0, 0, 20)
+lbltitle.Font = Enum.Font.SourceSansBold
+lbltitle.Text = "واجهة الجماع"
+lbltitle.TextColor3 = Color3.new(0, 0, 0)
+lbltitle.TextSize = 14
+
+-- زر الإغلاق X
+CloseButton.Name = "CloseButton"
+CloseButton.Parent = FGUI
+CloseButton.BackgroundColor3 = Color3.new(1, 0, 0)
+CloseButton.BorderSizePixel = 0
+CloseButton.Position = UDim2.new(1, -25, 0, 0)
+CloseButton.Size = UDim2.new(0, 25, 0, 20)
+CloseButton.Font = Enum.Font.SourceSansBold
+CloseButton.Text = "X"
+CloseButton.TextColor3 = Color3.new(1, 1, 1)
+CloseButton.TextSize = 14
+
+CloseButton.MouseButton1Click:Connect(function()
+    SimpleSexGUI:Destroy()
+end)
+
+btnSex.Name = "Sex"
+btnSex.Parent = FGUI
+btnSex.BackgroundColor3 = Color3.new(1, 1, 1)
+btnSex.BorderSizePixel = 0
+btnSex.Position = UDim2.new(0.05, 0, 0.25, 0)
+btnSex.Size = UDim2.new(0.4, 0, 0, 20)
+btnSex.Font = Enum.Font.SourceSansBold
+btnSex.Text = "لنبدأ الجماع!!"
+btnSex.TextColor3 = Color3.new(0, 0, 0)
+btnSex.TextSize = 12
+
+tbxVictim.Name = "VictimTEXT"
+tbxVictim.Parent = FGUI
+tbxVictim.BackgroundColor3 = Color3.new(1, 1, 1)
+tbxVictim.BorderSizePixel = 0
+tbxVictim.Position = UDim2.new(0.55, 0, 0.25, 0)
+tbxVictim.Size = UDim2.new(0.4, 0, 0, 20)
+tbxVictim.Visible = true
+tbxVictim.Active = true
+tbxVictim.Selectable = true
+tbxVictim.Font = Enum.Font.SourceSansBold
+tbxVictim.Text = "[الاسم]"
+tbxVictim.TextColor3 = Color3.new(0, 0, 0)
+tbxVictim.TextSize = 12
+
+lblFUCKEMALL.Name = "FUCKEMALL"
+lblFUCKEMALL.Parent = FGUI
+lblFUCKEMALL.BackgroundColor3 = Color3.new(1, 1, 1)
+lblFUCKEMALL.BorderSizePixel = 0
+lblFUCKEMALL.Position = UDim2.new(0.05, 0, 0.75, 0)
+lblFUCKEMALL.Size = UDim2.new(0.9, 0, 0, 20)
+lblFUCKEMALL.Font = Enum.Font.SourceSansBold
+lblFUCKEMALL.Text = "الجماع والجماع"
+lblFUCKEMALL.TextColor3 = Color3.new(0, 0, 0)
+lblFUCKEMALL.TextSize = 12
+
+Notification.Name = "Notification"
+Notification.Parent = FGUI
+Notification.BackgroundColor3 = Color3.new(1, 0, 0)
+Notification.BorderSizePixel = 0
+Notification.Position = UDim2.new(0.5, -75, 0.5, -50)
+Notification.Size = UDim2.new(0, 150, 0, 20)
+Notification.Font = Enum.Font.SourceSansBold
+Notification.Text = "اللاعب غير موجود"
+Notification.TextColor3 = Color3.new(1, 1, 1)
+Notification.TextSize = 12
+Notification.Visible = false
+
+CreditsLabel.Name = "CreditsLabel"
+CreditsLabel.Parent = FGUI
+CreditsLabel.BackgroundColor3 = Color3.new(0, 0, 0)
+CreditsLabel.BorderSizePixel = 0
+CreditsLabel.Position = UDim2.new(0, 10, 0.5, 0)
+CreditsLabel.Size = UDim2.new(1, -20, 0, 19)
+CreditsLabel.Font = Enum.Font.SourceSansBold
+CreditsLabel.Text = "محدث بواسطة محمد TN"
+CreditsLabel.TextColor3 = Color3.new(1, 1, 1)
+CreditsLabel.TextSize = 12
+
+-- إشعار اللاعب غير موجود
+local function showPlayerNotFoundError()
+    Notification.Text = "اللاعب غير موجود"
+    Notification.Visible = true
+    wait(2)
+    Notification.Visible = false
+end
+
+-- تفعيل الجماع أو إيقافه
+btnSex.MouseButton1Click:Connect(function()
+    if isScriptActive then
+        isScriptActive = false
+        btnSex.Text = "لنبدأ الجماع!!"
+        if animationInstance then animationInstance:Stop() end
+        if playerConnection then playerConnection:Disconnect() end
+    else
+        isScriptActive = true
+        btnSex.Text = "إيقاف الجماع"
+        local playerNamePartial = tbxVictim.Text
+        local player = findPlayerByPartialName(playerNamePartial)
+        if player then
+            performFuckingAction(player)
+        else
+            showPlayerNotFoundError()
+            return
+        end
+    end
+end)

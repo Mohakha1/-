@@ -1,0 +1,232 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local SoundService = game:GetService("SoundService")
+local lp = Players.LocalPlayer
+
+-- إضافة الصوت عند بداية التشغيل
+local sound = Instance.new("Sound")
+sound.SoundId = "rbxassetid://6979299092" -- ID للصوت الذي طلبته
+sound.Parent = game.Workspace
+sound:Play()
+
+-- حذف أي واجهة قديمة
+if game.CoreGui:FindFirstChild("TeleportMenu") then
+	game.CoreGui.TeleportMenu:Destroy()
+end
+
+-- إنشاء الواجهة
+local gui = Instance.new("ScreenGui", game.CoreGui)
+gui.Name = "TeleportMenu"
+gui.ResetOnSpawn = false
+
+-- إنشاء إطار القائمة
+local frame = Instance.new("Frame", gui)
+frame.Position = UDim2.new(0.35, 0, 0.2, 0)
+frame.Size = UDim2.new(0, 320, 0, 400)
+frame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+frame.BorderSizePixel = 0
+frame.Visible = false
+
+-- تأثير الأنميشن للظهور
+local TweenService = game:GetService("TweenService")
+local openTween = TweenService:Create(frame, TweenInfo.new(0.5, Enum.EasingStyle.Sine), {Position = UDim2.new(0.35, 0, 0.2, 0)})
+local closeTween = TweenService:Create(frame, TweenInfo.new(0.5, Enum.EasingStyle.Sine), {Position = UDim2.new(0.35, 0, -0.5, 0)})
+
+-- العنوان
+local title = Instance.new("TextLabel", frame)
+title.Size = UDim2.new(1, 0, 0, 40)
+title.BackgroundTransparency = 1
+title.Text = "قائمة النقل والمتابعة"
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 22
+
+-- قائمة التمرير
+local scroll = Instance.new("ScrollingFrame", frame)
+scroll.Position = UDim2.new(0, 0, 0, 40)
+scroll.Size = UDim2.new(1, 0, 1, -40)
+scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+scroll.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+scroll.ScrollBarThickness = 6
+
+-- تابع التتبع
+local following = false
+local followConnection
+local function followPlayer(targetPlayer)
+	if followConnection then followConnection:Disconnect() end
+	following = true
+	followConnection = RunService.Heartbeat:Connect(function()
+		if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
+			lp.Character.HumanoidRootPart.CFrame = targetPlayer.Character.HumanoidRootPart.CFrame + Vector3.new(3,0,0)
+		end
+	end)
+end
+
+local function stopFollow()
+	following = false
+	if followConnection then
+		followConnection:Disconnect()
+		followConnection = nil
+	end
+end
+
+-- زر لكل لاعب
+local function createButton(playerName)
+	local target = Players:FindFirstChild(playerName)
+	if not target then return end
+
+	local holder = Instance.new("Frame", scroll)
+	holder.Size = UDim2.new(1, -10, 0, 50)
+	holder.Position = UDim2.new(0, 5, 0, #scroll:GetChildren() * 55)
+	holder.BackgroundTransparency = 1
+
+	-- زر النقل
+	local teleportBtn = Instance.new("TextButton", holder)
+	teleportBtn.Size = UDim2.new(0.6, -5, 1, 0)
+	teleportBtn.Position = UDim2.new(0, 0, 0, 0)
+	teleportBtn.Text = "نقل إلى " .. playerName
+	teleportBtn.TextColor3 = Color3.new(1,1,1)
+	teleportBtn.BackgroundColor3 = Color3.fromRGB(50, 100, 200)
+	teleportBtn.Font = Enum.Font.Gotham
+	teleportBtn.TextSize = 16
+
+	teleportBtn.MouseButton1Click:Connect(function()
+		if target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+			lp.Character.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame + Vector3.new(3,0,0)
+		end
+	end)
+
+	-- زر المتابعة
+	local followBtn = Instance.new("TextButton", holder)
+	followBtn.Size = UDim2.new(0.4, 0, 1, 0)
+	followBtn.Position = UDim2.new(0.6, 5, 0, 0)
+	followBtn.Text = "متابعة"
+	followBtn.TextColor3 = Color3.new(1,1,1)
+	followBtn.BackgroundColor3 = Color3.fromRGB(70, 200, 100)
+	followBtn.Font = Enum.Font.Gotham
+	followBtn.TextSize = 16
+
+	followBtn.MouseButton1Click:Connect(function()
+		stopFollow()
+		followPlayer(target)
+		game:GetService("StarterGui"):SetCore("SendNotification", {Title = "أنت الآن تتابع " .. playerName; Text = "متابعة اللاعب: " .. playerName; Duration = 2})
+	end)
+end
+
+-- زر إيقاف المتابعة
+local stopBtn = Instance.new("TextButton", frame)
+stopBtn.Size = UDim2.new(0, 100, 0, 30)
+stopBtn.Position = UDim2.new(0, 10, 1, -35)
+stopBtn.Text = "إيقاف المتابعة"
+stopBtn.TextColor3 = Color3.new(1,1,1)
+stopBtn.BackgroundColor3 = Color3.fromRGB(200, 70, 70)
+stopBtn.Font = Enum.Font.Gotham
+stopBtn.TextSize = 14
+stopBtn.ZIndex = 2
+
+stopBtn.MouseButton1Click:Connect(function()
+	stopFollow()
+end)
+
+-- زر "X" لإغلاق الواجهة
+local closeBtn = Instance.new("TextButton", frame)
+closeBtn.Size = UDim2.new(0, 30, 0, 30)
+closeBtn.Position = UDim2.new(1, -40, 0, 5)
+closeBtn.Text = "X"
+closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+closeBtn.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+closeBtn.Font = Enum.Font.GothamBold
+closeBtn.TextSize = 18
+
+closeBtn.MouseButton1Click:Connect(function()
+	-- إخفاء الـ GUI أو تدميره
+	gui:Destroy()  -- هنا سيتم تدمير الـ GUI بالكامل
+end)
+
+-- تحديث القائمة
+local function refresh()
+	scroll:ClearAllChildren()
+	local y = 0
+	for _, p in ipairs(Players:GetPlayers()) do
+		if p ~= lp then
+			createButton(p.Name)
+			y = y + 55
+		end
+	end
+	scroll.CanvasSize = UDim2.new(0, 0, 0, y)
+end
+
+-- إضافة زر فتح وإغلاق القائمة
+local openBtn = Instance.new("TextButton", gui)
+openBtn.Size = UDim2.new(0, 150, 0, 50)
+openBtn.Position = UDim2.new(0, 10, 0.85, 0)
+openBtn.Text = "فتح القائمة"
+openBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+openBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 127)
+openBtn.Font = Enum.Font.Gotham
+openBtn.TextSize = 18
+
+openBtn.MouseButton1Click:Connect(function()
+	if frame.Visible then
+		closeTween:Play()
+		frame.Visible = false
+	else
+		openTween:Play()
+		frame.Visible = true
+	end
+end)
+
+-- السماح بتحريك الواجهة على الأجهزة المحمولة
+local dragging = false
+local dragInput, dragStart, startPos
+
+frame.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.Touch then
+		dragging = true
+		dragStart = input.Position
+		startPos = frame.Position
+	end
+end)
+
+frame.InputChanged:Connect(function(input)
+	if dragging and input.UserInputType == Enum.UserInputType.Touch then
+		local delta = input.Position - dragStart
+		frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+	end
+end)
+
+frame.InputEnded:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.Touch then
+		dragging = false
+	end
+end)
+
+-- السماح بتحريك زر Open Menu على الجوال
+local openBtnDragging = false
+local openBtnDragInput, openBtnDragStart, openBtnStartPos
+
+openBtn.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.Touch then
+		openBtnDragging = true
+		openBtnDragStart = input.Position
+		openBtnStartPos = openBtn.Position
+	end
+end)
+
+openBtn.InputChanged:Connect(function(input)
+	if openBtnDragging and input.UserInputType == Enum.UserInputType.Touch then
+		local delta = input.Position - openBtnDragStart
+		openBtn.Position = UDim2.new(openBtnStartPos.X.Scale, openBtnStartPos.X.Offset + delta.X, openBtnStartPos.Y.Scale, openBtnStartPos.Y.Offset + delta.Y)
+	end
+end)
+
+openBtn.InputEnded:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.Touch then
+		openBtnDragging = false
+	end
+end)
+
+-- تحديث القائمة عند إضافة أو إزالة اللاعبين
+refresh()
+Players.PlayerAdded:Connect(refresh)
+Players.PlayerRemoving:Connect(refresh)

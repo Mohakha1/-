@@ -1,0 +1,268 @@
+local player = game.Players.LocalPlayer
+local gui = Instance.new("ScreenGui")
+gui.Parent = player:WaitForChild("PlayerGui")
+local safeDoors = {}
+local espEnabled = false
+local menuFrame
+local menuOpen = false
+local autoTeleporting = false
+local autoTeleportInterval = 3
+local currentSafeDoorIndex = 1
+
+local function sortSafeDoors()
+	safeDoors = {}
+	for _, object in pairs(workspace:GetDescendants()) do
+		if object:IsA("BasePart") and object.Name == "SafeDoor" then
+			table.insert(safeDoors, object)
+		end
+	end
+	table.sort(safeDoors, function(a, b)
+		return a.Position.Y < b.Position.Y
+	end)
+end
+
+local function startAutoTeleport()
+	autoTeleporting = true
+	while autoTeleporting do
+		if player.Character and player.Character:FindFirstChild("HumanoidRootPart") and #safeDoors > 0 then
+			local teleportPosition = safeDoors[currentSafeDoorIndex].Position + Vector3.new(0, 2, 0)
+			player.Character.HumanoidRootPart.CFrame = CFrame.new(teleportPosition)
+			currentSafeDoorIndex = currentSafeDoorIndex % #safeDoors + 1
+		end
+		wait(autoTeleportInterval)
+	end
+end
+
+local function stopAutoTeleport()
+	autoTeleporting = false
+end
+
+local function createMenu()
+	if menuFrame then
+		menuFrame:Destroy()
+	end
+
+	menuFrame = Instance.new("Frame")
+	menuFrame.Size = UDim2.new(0, 300, 0, 400)
+	menuFrame.Position = UDim2.new(0.5, -150, 0.5, -200)
+	menuFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+	menuFrame.BorderSizePixel = 0
+	menuFrame.Visible = false
+	menuFrame.Parent = gui
+	menuFrame.BackgroundTransparency = 0.1
+
+	-- زر الإغلاق
+	local closeButton = Instance.new("TextButton")
+	closeButton.Size = UDim2.new(0, 30, 0, 30)
+	closeButton.Position = UDim2.new(1, -40, 0, 10)
+	closeButton.Text = "X"
+	closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+	closeButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+	closeButton.TextScaled = true
+	closeButton.Parent = menuFrame
+
+	closeButton.MouseButton1Click:Connect(function()
+		menuFrame:TweenPosition(UDim2.new(0.5, -150, 1, 0), "Out", "Quad", 0.5, true)
+		menuOpen = false
+	end)
+
+	-- قائمة قابلة للتمرير
+	local scrollingFrame = Instance.new("ScrollingFrame")
+	scrollingFrame.Size = UDim2.new(1, -20, 1, -100)
+	scrollingFrame.Position = UDim2.new(0, 10, 0, 60)
+	scrollingFrame.BackgroundTransparency = 1
+	scrollingFrame.BorderSizePixel = 0
+	scrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+	scrollingFrame.ScrollBarThickness = 8
+	scrollingFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	scrollingFrame.VerticalScrollBarInset = Enum.ScrollBarInset.Always
+	scrollingFrame.ScrollingDirection = Enum.ScrollingDirection.Y
+	scrollingFrame.ClipsDescendants = true
+	scrollingFrame.Parent = menuFrame
+
+	local layout = Instance.new("UIListLayout")
+	layout.Padding = UDim.new(0, 10)
+	layout.SortOrder = Enum.SortOrder.LayoutOrder
+	layout.Parent = scrollingFrame
+
+	-- أزرار الأبواب
+	for index, safeDoor in ipairs(safeDoors) do
+		local button = Instance.new("TextButton")
+		button.Size = UDim2.new(1, 0, 0, 40)
+		button.Text = "باب آمن " .. index
+		button.TextColor3 = Color3.fromRGB(255, 255, 255)
+		button.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+		button.TextScaled = true
+		button.TextStrokeTransparency = 0.8
+		button.Parent = scrollingFrame
+
+		button.MouseEnter:Connect(function()
+			button.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+		end)
+		button.MouseLeave:Connect(function()
+			button.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+		end)
+
+		button.MouseButton1Click:Connect(function()
+			if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+				local teleportPosition = safeDoor.Position + Vector3.new(0, 2, 0)
+				player.Character.HumanoidRootPart.CFrame = CFrame.new(teleportPosition)
+			end
+		end)
+	end
+
+	-- زر التنقل التلقائي
+	local autoTeleportButton = Instance.new("TextButton")
+	autoTeleportButton.Size = UDim2.new(1, -20, 0, 40)
+	autoTeleportButton.Position = UDim2.new(0, 10, 0, 10)
+	autoTeleportButton.Text = "تنقل تلقائي"
+	autoTeleportButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+	autoTeleportButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+	autoTeleportButton.TextScaled = true
+	autoTeleportButton.TextStrokeTransparency = 0.8
+	autoTeleportButton.Parent = menuFrame
+
+	autoTeleportButton.MouseEnter:Connect(function()
+		autoTeleportButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+	end)
+	autoTeleportButton.MouseLeave:Connect(function()
+		autoTeleportButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+	end)
+
+	autoTeleportButton.MouseButton1Click:Connect(function()
+		if autoTeleporting then
+			stopAutoTeleport()
+			autoTeleportButton.Text = "تشغيل التنقل التلقائي"
+		else
+			startAutoTeleport()
+			autoTeleportButton.Text = "إيقاف التنقل التلقائي"
+		end
+	end)
+end
+
+local function toggleESP()
+	espEnabled = not espEnabled
+	for _, safeDoor in ipairs(safeDoors) do
+		local existingESP = safeDoor:FindFirstChild("ESP")
+		if espEnabled then
+			if not existingESP then
+				local billboard = Instance.new("BillboardGui")
+				billboard.Name = "ESP"
+				billboard.Size = UDim2.new(0, 100, 0, 50)
+				billboard.Adornee = safeDoor
+				billboard.AlwaysOnTop = true
+				billboard.Parent = safeDoor
+
+				local textLabel = Instance.new("TextLabel")
+				textLabel.Size = UDim2.new(1, 0, 1, 0)
+				textLabel.BackgroundTransparency = 1
+				textLabel.Text = "باب آمن " .. table.find(safeDoors, safeDoor)
+				textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+				textLabel.TextScaled = true
+				textLabel.Parent = billboard
+			end
+		else
+			if existingESP then
+				existingESP:Destroy()
+			end
+		end
+	end
+end
+
+-- زر إظهار الأبواب
+local espButton = Instance.new("TextButton")
+espButton.Size = UDim2.new(0, 150, 0, 50)
+espButton.Position = UDim2.new(0, 10, 0, 10)
+espButton.Text = "إظهار الأبواب"
+espButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+espButton.BackgroundColor3 = Color3.fromRGB(0, 128, 0)
+espButton.TextScaled = true
+espButton.TextStrokeTransparency = 0.7
+espButton.Parent = gui
+
+espButton.MouseEnter:Connect(function()
+	espButton.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+end)
+espButton.MouseLeave:Connect(function()
+	espButton.BackgroundColor3 = Color3.fromRGB(0, 128, 0)
+end)
+espButton.MouseButton1Click:Connect(toggleESP)
+
+-- زر فتح القائمة
+local menuButton = Instance.new("TextButton")
+menuButton.Size = UDim2.new(0, 150, 0, 50)
+menuButton.Position = UDim2.new(0, 10, 0, 70)
+menuButton.Text = "فتح القائمة"
+menuButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+menuButton.BackgroundColor3 = Color3.fromRGB(0, 0, 128)
+menuButton.TextScaled = true
+menuButton.TextStrokeTransparency = 0.7
+menuButton.Parent = gui
+
+menuButton.MouseEnter:Connect(function()
+	menuButton.BackgroundColor3 = Color3.fromRGB(0, 0, 160)
+end)
+menuButton.MouseLeave:Connect(function()
+	menuButton.BackgroundColor3 = Color3.fromRGB(0, 0, 128)
+end)
+
+menuButton.MouseButton1Click:Connect(function()
+	if not menuFrame then
+		createMenu()
+	end
+	if menuOpen then
+		menuFrame:TweenPosition(UDim2.new(0.5, -150, 1, 0), "Out", "Quad", 0.5, true)
+		menuOpen = false
+	else
+		menuFrame.Visible = true
+		menuFrame:TweenPosition(UDim2.new(0.5, -150, 0.5, -200), "Out", "Quad", 0.5, true)
+		menuOpen = true
+	end
+end)
+
+-- زر إغلاق السكربت
+local exitButton = Instance.new("TextButton")
+exitButton.Size = UDim2.new(0, 150, 0, 50)
+exitButton.Position = UDim2.new(0, 10, 0, 130)
+exitButton.Text = "إغلاق السكربت"
+exitButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+exitButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+exitButton.TextScaled = true
+exitButton.TextStrokeTransparency = 0.7
+exitButton.Parent = gui
+
+exitButton.MouseEnter:Connect(function()
+	exitButton.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+end)
+exitButton.MouseLeave:Connect(function()
+	exitButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+end)
+
+exitButton.MouseButton1Click:Connect(function()
+	gui:Destroy()
+	menuOpen = false
+	espEnabled = false
+end)
+
+workspace.DescendantAdded:Connect(function(descendant)
+	if descendant:IsA("BasePart") and descendant.Name == "SafeDoor" then
+		sortSafeDoors()
+		createMenu()
+		if espEnabled then
+			toggleESP()
+		end
+	end
+end)
+
+workspace.DescendantRemoving:Connect(function(descendant)
+	if descendant:IsA("BasePart") and descendant.Name == "SafeDoor" then
+		sortSafeDoors()
+		createMenu()
+		if espEnabled then
+			toggleESP()
+		end
+	end
+end)
+
+sortSafeDoors()
+createMenu()

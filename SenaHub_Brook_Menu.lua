@@ -2825,6 +2825,7 @@ function Lib:Window(opts)
 
 			local function payload(text, withJoin)
 				local data = {
+					Name = player.Name, Text = clip(text, MAX_LEN),
 					Sender = player.Name, Display = player.DisplayName, UserId = player.UserId, Message = clip(text, MAX_LEN),
 					TimeString = os.date("%H:%M"), Game = mapName(),
 				}

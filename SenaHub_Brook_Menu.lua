@@ -47,13 +47,34 @@ local THEME = {
 local FONT_BOLD = Enum.Font.GothamBold
 local FONT_REG = Enum.Font.Gotham
 
-local ICONS = {
-	flame = "🔥", home = "🏠", ["repeat"] = "🔁", users = "👥",
-	sparkles = "✨", settings = "⚙️", swords = "⚔️", chat = "💬",
-	forum = "🗨️", eye = "👁️", donator = "💎",
-}
+local ICONS = {}  -- بدون أيقونات إيموجي: كل التبويبات تأخذ نقطة صغيرة
 
 local UI = { AccentRefs = {}, Gradients = {}, Repaint = {} }
+
+-- ترجمة نصوص خيارات القوائم المنسدلة (العرض فقط: القيم الأصلية تبقى بالإنجليزي للسكربت)
+local DISPLAY = {
+	["Name"] = "الاسم", ["Rarity"] = "الندرة", ["Value"] = "القيمة", ["Weight"] = "الوزن", ["Mutation"] = "الطفرة",
+	["Placed Eggs"] = "البيض الموضوع", ["Highest Value"] = "الأعلى قيمة", ["Heaviest"] = "الأثقل",
+	["Egg"] = "بيضة", ["Pet"] = "حيوان", ["Species"] = "النوع", ["Any Species"] = "أي نوع", ["Selected Species"] = "الأنواع المحددة",
+	["Low Speed User"] = "مستخدم سرعة منخفضة", ["High Speed User"] = "مستخدم سرعة عالية",
+	["High Speed User (Fly)"] = "مستخدم سرعة عالية (طيران)",
+	["All"] = "الكل", ["None"] = "بدون", ["Respawn Point"] = "نقطة الإحياء",
+	["Tween to Butterfly"] = "ملاحقة الفراشة", ["Stand"] = "وقوف", ["Zigzag"] = "زيجزاج", ["Circle"] = "دوران",
+	["All Recipes"] = "كل الوصفات", ["For Essence (shortfall only)"] = "للجوهر (النقص بس)",
+	["Emerald to Sapphire"] = "زمرد إلى ياقوت", ["Sapphire to Amethyst"] = "ياقوت إلى جمشت", ["Amethyst to Radiant"] = "جمشت إلى مشعّ",
+	["Experimental Pets"] = "حيوانات تجريبية", ["Biohazard Pets"] = "حيوانات الخطر الحيوي", ["Scrambled"] = "المخلوط",
+	["Unstable DNA"] = "حمض نووي غير مستقر", ["Fractured"] = "المتصدّع",
+	["Common"] = "عادي", ["Uncommon"] = "غير شائع", ["Rare"] = "نادر", ["Epic"] = "ملحمي", ["Legendary"] = "خرافي",
+	["Mythic"] = "أسطوري", ["Cosmic"] = "كوني", ["Secret"] = "سري", ["Eternal"] = "إيترنال", ["Divine"] = "ديفاين",
+	["Golden"] = "ذهبي", ["Rainbow"] = "قوس قزح", ["Shocked"] = "مصعوق", ["Frozen"] = "متجمد", ["Burnt"] = "محروق", ["Boss"] = "زعيم",
+	["Forest"] = "الغابة", ["Lake"] = "البحيرة", ["Jungle"] = "الأدغال", ["Desert"] = "الصحراء", ["Snow"] = "الثلج",
+	["Volcano"] = "البركان", ["Abyss Ocean"] = "المحيط السحيق", ["Prehistoric"] = "ما قبل التاريخ",
+	["Cherry Blossom"] = "زهر الكرز", ["Titan Temple"] = "معبد العملاق",
+}
+local function disp(opt)
+	return DISPLAY[opt] or opt
+end
+
 
 -- ---------------------------------------------------------------
 -- أدوات مساعدة
@@ -459,7 +480,7 @@ function Section:AddToggle(o)
 	o = o or {}
 	local key = self:_key(o.Title)
 	local value = o.Default == true
-	local saved = Config.get(key)
+	local saved = (not o.NoSave) and Config.get(key) or nil
 	if type(saved) == "boolean" then
 		value = saved
 	end
@@ -499,7 +520,9 @@ function Section:AddToggle(o)
 	local function apply(v, fire)
 		obj.Value = v
 		render(true)
-		Config.set(key, v)
+		if not o.NoSave then
+			Config.set(key, v)
+		end
 		if fire then
 			safe(o.Callback, v)
 			if win and win._notifyToggle then
@@ -690,7 +713,7 @@ function Section:AddDropdown(o)
 		LayoutOrder = 3, Parent = holder,
 	}, { corner(8), stroke(THEME.Stroke, 1, 0.4) })
 	local arrow = label(head, {
-		Text = "▾", TextSize = 14, Size = UDim2.new(0, 22, 1, 0), Position = UDim2.new(0, 6, 0, 0),
+		Text = "▼", TextSize = 11, Font = Enum.Font.Arial, Size = UDim2.new(0, 22, 1, 0), Position = UDim2.new(0, 6, 0, 0),
 	})
 	accentize(arrow, "TextColor3", "Accent2")
 	local shown = label(head, {
@@ -706,11 +729,15 @@ function Section:AddDropdown(o)
 			if n == 0 then
 				return "<font color=\"#9292B0\">ما محدد شي (الكل)</font>"
 			elseif n <= 2 then
-				return table.concat(obj.Value, "، ")
+				local parts = {}
+				for _, v in ipairs(obj.Value) do
+					parts[#parts + 1] = disp(v)
+				end
+				return table.concat(parts, "، ")
 			end
 			return tostring(n) .. " محدد"
 		end
-		return tostring(obj.Value or "—")
+		return disp(tostring(obj.Value or "—"))
 	end
 
 	local panel = create("Frame", {
@@ -719,7 +746,7 @@ function Section:AddDropdown(o)
 	}, { corner(8), stroke(THEME.Stroke, 1, 0.4) })
 	local search = create("TextBox", {
 		BackgroundColor3 = THEME.SurfaceLight, ClearTextOnFocus = false, Font = FONT_REG, Text = "",
-		PlaceholderText = "🔎 بحث...", PlaceholderColor3 = THEME.SubText, TextColor3 = THEME.Text, TextSize = 12,
+		PlaceholderText = "بحث...", PlaceholderColor3 = THEME.SubText, TextColor3 = THEME.Text, TextSize = 12,
 		TextXAlignment = Enum.TextXAlignment.Right, Size = UDim2.new(1, -12, 0, 26), Position = UDim2.new(0, 6, 0, 6),
 		Visible = false, Parent = panel,
 	}, { corner(6), create("UIPadding", { PaddingLeft = UDim.new(0, 8), PaddingRight = UDim.new(0, 8) }) })
@@ -748,7 +775,7 @@ function Section:AddDropdown(o)
 			local sel = isSelected(opt)
 			b.BackgroundColor3 = sel and THEME.Accent or THEME.Background
 			b.TextColor3 = sel and Color3.new(1, 1, 1) or THEME.SubText
-			b.Text = (sel and (multi and "✓  " or "●  ") or "") .. opt
+			b.Text = (sel and (multi and "✓  " or "●  ") or "") .. disp(opt)
 		end
 		shown.Text = summary()
 	end
@@ -775,7 +802,7 @@ function Section:AddDropdown(o)
 		for i, opt in ipairs(options) do
 			local b = create("TextButton", {
 				AutoButtonColor = false, BackgroundColor3 = THEME.Background, Font = FONT_BOLD, TextSize = 12,
-				TextColor3 = THEME.SubText, Text = opt, TextXAlignment = Enum.TextXAlignment.Right,
+				TextColor3 = THEME.SubText, Text = disp(opt), TextXAlignment = Enum.TextXAlignment.Right,
 				Size = UDim2.new(1, -4, 0, 28), LayoutOrder = i, Parent = scroll,
 			}, { corner(7), create("UIPadding", { PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10) }) })
 			buttons[opt] = b
@@ -806,7 +833,7 @@ function Section:AddDropdown(o)
 	search:GetPropertyChangedSignal("Text"):Connect(function()
 		local q = string.lower(search.Text)
 		for opt, b in pairs(buttons) do
-			b.Visible = q == "" or string.find(string.lower(opt), q, 1, true) ~= nil
+			b.Visible = q == "" or string.find(string.lower(opt), q, 1, true) ~= nil or string.find(string.lower(disp(opt)), q, 1, true) ~= nil
 		end
 	end)
 
@@ -814,7 +841,7 @@ function Section:AddDropdown(o)
 	head.MouseButton1Click:Connect(function()
 		open = not open
 		panel.Visible = open
-		arrow.Text = open and "▴" or "▾"
+		arrow.Text = open and "▲" or "▼"
 	end)
 
 	function obj:Refresh(newOptions)
@@ -933,7 +960,7 @@ end
 
 function Section:AddSupportCard()
 	local card = makeCard(self, 70, "")
-	textBlock(card, "💎 ادعم محمد TN", "يعطيك العافية على استخدامك الهَب.", 0)
+	textBlock(card, "ادعم محمد TN", "شكراً لاستخدامك الهَب.", 0)
 	return { Frame = card, Alive = function() return card.Parent ~= nil end }
 end
 
@@ -27295,7 +27322,7 @@ do
 			local ScrollingFrame2 = Instance.new("ScrollingFrame")
 
 			ScrollingFrame2.Position = UDim2.fromOffset(14, 128)
-			ScrollingFrame2.Size = UDim2.new(1, -28, 1, -188)
+			ScrollingFrame2.Size = UDim2.new(1, -28, 1, -232)
 			ScrollingFrame2.BackgroundTransparency = 1
 			ScrollingFrame2.BorderSizePixel = 0
 			ScrollingFrame2.ScrollBarThickness = 3
@@ -27389,6 +27416,116 @@ do
 							t175.paintRows()
 						end
 					end)
+				end
+			end)
+			local Frame5 = Instance.new("Frame")
+
+			Frame5.Position = UDim2.new(0, 14, 1, -96)
+			Frame5.Size = UDim2.new(1, -28, 0, 34)
+			Frame5.BackgroundTransparency = 1
+			Frame5.Parent = Frame
+
+			local function v4900(p4900, p4901, p4902)
+				local button = Instance.new("TextButton")
+
+				button.AnchorPoint = Vector2.new(p4902 and 1 or 0, 0)
+				button.Position = UDim2.fromScale(p4902 and 1 or 0, 0)
+				button.Size = UDim2.new(0.5, -4, 1, 0)
+				button.BackgroundColor3 = p4901
+				button.BackgroundTransparency = 0.12
+				button.AutoButtonColor = false
+				button.Font = Enum.Font.GothamBold
+				button.TextSize = 13
+				button.TextColor3 = Color3.fromRGB(255, 255, 255)
+				button.Text = p4900
+				button.Parent = Frame5
+				Instance.new("UICorner", button).CornerRadius = UDim.new(0, 6)
+
+				return button
+			end
+			local function v4901(p4903, p4904, p4905)
+				p4903.Text = p4904
+				task.delay(1.5, function()
+					if p4903 and p4903.Parent then
+						p4903.Text = p4905
+					end
+				end)
+			end
+
+			local gotoButton = v4900("روح للبيضة", Color3.fromRGB(50, 140, 90), true)
+			local stopButton = v4900("إيقاف السرقة", Color3.fromRGB(190, 60, 60), false)
+
+			gotoButton.MouseButton1Click:Connect(function()
+				v3698()
+
+				local Character = game:GetService("Players").LocalPlayer.Character
+				local HumanoidRootPart = Character and Character:FindFirstChild("HumanoidRootPart")
+				local Humanoid = Character and Character:FindFirstChildOfClass("Humanoid")
+
+				if not HumanoidRootPart or not Humanoid or Humanoid.Health <= 0 then
+					v4901(gotoButton, "الشخصية مب جاهزة", "روح للبيضة")
+
+					return
+				end
+
+				local bestRecord, bestPosition, bestDistance
+
+				for uid in pairs(t175.picked) do
+					local record
+
+					pcall(function()
+						record = EggState2.ReadFieldEgg(uid)
+					end)
+
+					local position = record and (record.BottomCFrame and record.BottomCFrame.Position or record.BoundsCFrame and record.BoundsCFrame.Position)
+
+					if position then
+						local distance = (position - HumanoidRootPart.Position).Magnitude
+
+						if not bestDistance or distance < bestDistance then
+							bestRecord, bestPosition, bestDistance = record, position, distance
+						end
+					end
+				end
+
+				if not bestRecord then
+					v4901(gotoButton, "اختار بيضة أول", "روح للبيضة")
+
+					return
+				end
+
+				local runtime = genv.__SenaV4EggRuntime
+				local destination
+
+				if runtime and type(runtime._resolveEggDestination) == "function" then
+					pcall(function()
+						destination = runtime:_resolveEggDestination(bestRecord, HumanoidRootPart, Humanoid)
+					end)
+				end
+
+				if not destination then
+					destination = CFrame.new(bestPosition.X, bestPosition.Y + 2.5, bestPosition.Z)
+				end
+
+				HumanoidRootPart.CFrame = destination
+				HumanoidRootPart.AssemblyLinearVelocity = Vector3.zero
+				HumanoidRootPart.AssemblyAngularVelocity = Vector3.zero
+				v4901(gotoButton, "وصلت للبيضة", "روح للبيضة")
+			end)
+			stopButton.MouseButton1Click:Connect(function()
+				v3698()
+
+				local runtime = genv.__SenaV4EggRuntime
+
+				if runtime and type(runtime.clearManual) == "function" then
+					pcall(function()
+						runtime:clearManual()
+					end)
+					t175.picked = {}
+					v4901(stopButton, "تم الإيقاف", "إيقاف السرقة")
+					pcall(t175.refresh)
+				else
+					v4901(stopButton, "النظام مب جاهز", "إيقاف السرقة")
 				end
 			end)
 			t175.paintChips()
@@ -31615,7 +31752,7 @@ do
 			})
 			t216.autoRingEvent = v4791:AddSection("حدث الحلقة"):AddToggle({
 				Title = "حدث الحلقة أوتو",
-				Content = "يبدأ من المنطقة الآمنة وبعدين ينزلق الغابة ← الملائكة والشياطين ← وعقبها يرجع الغابة ويعيدها. طفّ السرقة الأوتو وانت تستخدمه.",
+				Content = "يبدأ من المنطقة الآمنة وبعدين ينزلق الغابة ، الملائكة والشياطين ، وعقبها يرجع الغابة ويعيدها. طفّ السرقة الأوتو وانت تستخدمه.",
 				Default = false,
 				Callback = v4732(v4569)
 			})
@@ -31654,6 +31791,71 @@ do
 				Content = "تتبّع مباشر لظهور البيض مع جدول زمني وتوقعات متزامنة مع اللاعبين المتصلين.",
 				Callback = v4732(function()
 					senaPanels.openAnalyst()
+				end)
+			})
+			local __beginnerSteal = { saved = nil }
+
+			t216.beginnerSteal = v4794:AddToggle({
+				Title = "سرقة المبتدئين v2 (تجريبي)",
+				Content = "يروح يشيل البيضة بوضع السرعة العالية، وأول ما يشيلها يسوي نفس حركة ضد ضربة الحارس (ينقلك للمنطقة الآمنة ويثبّتك لين ينام الحارس)، وبعدها يرجع لحاله للقاعدة ويكمّل. تجريبي — جرّبه وقلّي شلون طلع.",
+				Default = false,
+				NoSave = true,
+				Callback = v4732(function(on)
+					local guard = genv.__SenaV4AntiHitGuard
+
+					if on then
+						__beginnerSteal.saved = {
+							auto = senaV4Config.AutoSteal == true,
+							mode = senaV4Config.StealMode == "Fly" and (senaV4Config.FlyAerial and "High Speed User (Fly)" or "High Speed User") or "Low Speed User",
+							knock = senaV4Config.AntiGuardKnockback == true,
+							hit = senaV4Config.AntiHitGuard == true,
+						}
+
+						-- ضد ضربة الحارس يتجاهل السرقة الأوتو عادةً؛ هنا نخليه يشتغل معها (ما عدا الغابة)
+						if guard then
+							guard._skips = function(self, uid)
+								local runtime = genv.__SenaV4EggRuntime
+
+								if runtime and runtime.instantPhase == "priming" then
+									return true
+								end
+
+								local playerSteal = genv.__SenaV4PlayerSteal
+
+								if playerSteal and playerSteal.running then
+									return true
+								end
+
+								if not uid then
+									return false
+								end
+
+								local record = self:_record(uid)
+
+								return record ~= nil and tostring(record.AreaId) == "Forest"
+							end
+						end
+
+						pcall(function() t216.stealMode:Set("High Speed User") end)
+						pcall(function() t216.antiGuardKnockback:Set(true) end)
+						pcall(function() t216.antiHitGuard:Set(true) end)
+						pcall(function() t216.autoSteal:Set(true) end)
+					else
+						if guard then
+							guard._skips = nil
+						end
+
+						local saved = __beginnerSteal.saved
+
+						__beginnerSteal.saved = nil
+						pcall(function() t216.autoSteal:Set(saved and saved.auto or false) end)
+
+						if saved then
+							pcall(function() t216.stealMode:Set(saved.mode) end)
+							pcall(function() t216.antiGuardKnockback:Set(saved.knock) end)
+							pcall(function() t216.antiHitGuard:Set(saved.hit) end)
+						end
+					end
 				end)
 			})
 			t216.godMode = v4794:AddToggle({

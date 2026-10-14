@@ -4,7 +4,7 @@ do
 	local __env = (getgenv and getgenv()) or _G
 	__env.SenaLibOverride = (function()
 -- ============================================================
---  واجهة بتصميم Brookhaven Hub (زجاجية + ثيمات + بحث + بطاقة مستخدم)
+--  واجهة بتصميم بروكهافن هَب (زجاجية + ثيمات + بحث + بطاقة مستخدم)
 --  مكتبة تتوافق مع واجهة SenaLibOverride (Window / AddTab / AddSection ...)
 -- ============================================================
 local Players = game:GetService("Players")
@@ -70,6 +70,8 @@ local DISPLAY = {
 	["Forest"] = "الغابة", ["Lake"] = "البحيرة", ["Jungle"] = "الأدغال", ["Desert"] = "الصحراء", ["Snow"] = "الثلج",
 	["Volcano"] = "البركان", ["Abyss Ocean"] = "المحيط السحيق", ["Prehistoric"] = "ما قبل التاريخ",
 	["Cherry Blossom"] = "زهر الكرز", ["Titan Temple"] = "معبد العملاق",
+	["Radiant"] = "مشعّ", ["Amethyst"] = "جمشت", ["Sapphire"] = "ياقوت", ["Emerald"] = "زمرد",
+	["Purple"] = "بنفسجي", ["Blue"] = "أزرق", ["Green"] = "أخضر",
 }
 local function disp(opt)
 	return DISPLAY[opt] or opt
@@ -341,6 +343,10 @@ local function makeCard(sec, minH, searchText)
 		Parent = tab.Page,
 	}, { corner(12), cardStroke })
 	c:SetAttribute("Search", tostring(searchText or ""))
+	if sec._items then
+		table.insert(sec._items, c)
+		c.Visible = not sec._collapsed
+	end
 	create("UIGradient", {
 		Color = ColorSequence.new(Color3.fromRGB(255, 255, 255), Color3.fromRGB(196, 196, 214)),
 		Rotation = 90, Parent = c,
@@ -433,6 +439,10 @@ function Section:AddSubSection(name)
 		BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 22), LayoutOrder = self._base + self._n, Parent = tab.Page,
 	})
 	f:SetAttribute("Section", true)
+	if self._items then
+		table.insert(self._items, f)
+		f.Visible = not self._collapsed
+	end
 	local t = label(f, {
 		AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -10, 0, 0), Size = UDim2.new(1, -10, 1, 0),
 		Text = tostring(name), TextSize = 12, TextXAlignment = Enum.TextXAlignment.Right,
@@ -497,7 +507,7 @@ end
 
 function Section:AddToggle(o)
 	o = o or {}
-	local key = self:_key(o.Title)
+	local key = o.Key or self:_key(o.Title)
 	local value = o.Default == true
 	local saved = (not o.NoSave) and Config.get(key) or nil
 	if type(saved) == "boolean" then
@@ -1007,21 +1017,36 @@ function Tab:AddSection(name, flat, prio, origTab, pathName)
 	})
 	accentize(text_, "TextColor3", "Accent2")
 	local line = create("Frame", {
-		AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 0, 0.5, 2), Size = UDim2.new(0, 0, 0, 1),
+		AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 26, 0.5, 2), Size = UDim2.new(0, 0, 0, 1),
 		BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Parent = s,
 	})
+	local arrow = label(s, {
+		Text = "▼", Font = Enum.Font.Arial, TextSize = 11, TextColor3 = THEME.SubText, Position = UDim2.new(0, 2, 0, 5),
+		Size = UDim2.new(0, 20, 0, 18), TextXAlignment = Enum.TextXAlignment.Center, TextYAlignment = Enum.TextYAlignment.Center,
+	})
+	local hit = create("TextButton", { BackgroundTransparency = 1, Text = "", Size = UDim2.new(1, 0, 1, 0), ZIndex = 5, Parent = s })
 	local g = accentGradient(180)
 	g.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(1, 0.55) })
 	g.Parent = line
 	local function fit()
-		line.Size = UDim2.new(1, -(text_.TextBounds.X + 40), 0, 1)
+		line.Size = UDim2.new(1, -(text_.TextBounds.X + 66), 0, 1)
 	end
 	text_:GetPropertyChangedSignal("TextBounds"):Connect(fit)
 	fit()
-	return setmetatable({
-		Tab = self, Window = self.Window, _keys = {}, _base = base, _n = 0,
+	local sec = setmetatable({
+		Tab = self, Window = self.Window, _keys = {}, _base = base, _n = 0, _items = {}, _collapsed = false,
 		Path = (origTab or self.Name) .. "/" .. tostring(pathName or name),
 	}, Section)
+	self._sections = self._sections or {}
+	table.insert(self._sections, sec)
+	hit.MouseButton1Click:Connect(function()
+		sec._collapsed = not sec._collapsed
+		arrow.Text = sec._collapsed and "◄" or "▼"
+		for _, item in ipairs(sec._items) do
+			item.Visible = not sec._collapsed
+		end
+	end)
+	return sec
 end
 
 -- إطار حر داخل التبويب (لدمج نوافذ جاهزة)
@@ -1343,7 +1368,7 @@ function Lib:Window(opts)
 			BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.82, BorderSizePixel = 0, Parent = sidebar,
 		}, { corner(9) })
 		accentGradient(0).Parent = pill
-		label(pill, { Size = UDim2.new(1, 0, 1, 0), Text = "HUB  •  v" .. tostring(opts.Version or 1), TextSize = 10 })
+		label(pill, { Size = UDim2.new(1, 0, 1, 0), Text = "الهَب  •  v" .. tostring(opts.Version or 1), TextSize = 10 })
 	end
 
 	local NAV_TOP = 168
@@ -1728,6 +1753,15 @@ function Lib:Window(opts)
 				end
 			end
 		end
+		if q == "" then
+			for _, sc in ipairs(tab._sections or {}) do
+				if sc._collapsed then
+					for _, item in ipairs(sc._items) do
+						item.Visible = false
+					end
+				end
+			end
+		end
 	end)
 
 	-- الإظهار / الإخفاء
@@ -1737,11 +1771,30 @@ function Lib:Window(opts)
 		applyScale()
 	end)
 	local guiVisible = true
-	local blurOn = false
-	local blurEffect = create("BlurEffect", { Size = 0, Name = "SenaBrookBlur", Parent = game:GetService("Lighting") })
+	local blurOn = true
+	local lighting = game:GetService("Lighting")
+	local blurEffect = create("BlurEffect", { Size = 0, Name = "SenaBrookBlur", Parent = lighting })
+	-- طبقة تعتيم احتياطية: تشتغل حتى لو اللعبة أو السكربت عطّل مؤثرات الإضاءة
+	local dim = create("Frame", {
+		Name = "Dim", Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 1,
+		BorderSizePixel = 0, ZIndex = 0, Parent = screenGui,
+	})
+	local function applyBlur()
+		local on = blurOn and guiVisible
+		pcall(function()
+			if not blurEffect.Parent then
+				blurEffect.Parent = lighting
+			end
+			if on then
+				blurEffect.Enabled = true
+			end
+		end)
+		tween(blurEffect, 0.3, { Size = on and 18 or 0 })
+		tween(dim, 0.3, { BackgroundTransparency = on and 0.55 or 1 })
+	end
 	local function setVisible(v)
 		guiVisible = v
-		tween(blurEffect, 0.3, { Size = (v and blurOn) and 10 or 0 })
+		applyBlur()
 		if v then
 			mainFrame.Visible = true
 			tween(openValue, 0.35, { Value = 1 }, Enum.EasingStyle.Back)
@@ -1829,6 +1882,17 @@ function Lib:Window(opts)
 	local footerAccum, footerLast = 0, os.clock()
 	connect(RunService.RenderStepped, function()
 		local t = os.clock()
+		if blurOn and guiVisible then
+			-- بعض خيارات السكربت (تخفيف الرسوميات) تطفي مؤثرات الإضاءة؛ نرجّعها كل إطار
+			pcall(function()
+				if not blurEffect.Parent then
+					blurEffect.Parent = lighting
+				end
+				if not blurEffect.Enabled then
+					blurEffect.Enabled = true
+				end
+			end)
+		end
 		if mainFrame.Visible then
 			syncIndicator()
 		end
@@ -1847,7 +1911,7 @@ function Lib:Window(opts)
 			pcall(function()
 				ping = math.floor(game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue())
 			end)
-			footerLabel.Text = string.format("%d FPS   •   %d ms   •   %d", frames, ping, #Players:GetPlayers())
+			footerLabel.Text = string.format("%d إطار   •   %d بنق   •   %d لاعب", frames, ping, #Players:GetPlayers())
 		end
 		headerShimmer.Offset = Vector2.new(((t * 0.45) % 2) - 1, 0)
 		if guiVisible then
@@ -2009,8 +2073,8 @@ function Lib:Window(opts)
 				listLabels[#listLabels + 1] = pillLbl
 			end
 		end
-		local function bindToggle(sec, title, desc, default, cb)
-			local t = sec:AddToggle({ Title = title, Content = desc, Default = default, Callback = cb })
+		local function bindToggle(sec, title, desc, default, cb, key)
+			local t = sec:AddToggle({ Title = title, Content = desc, Default = default, Callback = cb, Key = key })
 			cb(t.Value)
 			return t
 		end
@@ -2021,15 +2085,15 @@ function Lib:Window(opts)
 		bindToggle(uiSec, "تنبيه عند التبديل", "ينبّهك لما تشغّل أو تطفي أي ميزة", false, function(v)
 			win._notifyToggle = v
 		end)
-		bindToggle(uiSec, "لوحة الأداء", "FPS والبنق وعدد اللاعبين", true, function(v)
+		bindToggle(uiSec, "لوحة الأداء", "الإطارات والبنق وعدد اللاعبين", true, function(v)
 			if footerFrame then
 				footerFrame.Visible = v
 			end
 		end)
-		bindToggle(uiSec, "ضبابية الخلفية", "تأثير ضبابي لما تفتح الواجهة", false, function(v)
+		bindToggle(uiSec, "ضبابية الخلفية", "تأثير ضبابي وتعتيم للخلفية لما تفتح الواجهة", true, function(v)
 			blurOn = v
-			tween(blurEffect, 0.3, { Size = (v and guiVisible) and 10 or 0 })
-		end)
+			applyBlur()
+		end, "__blur_v2")
 		win._floatWanted = UserInputService.TouchEnabled
 		bindToggle(uiSec, "زر عائم", "زر على الشاشة لفتح الواجهة (للجوال)", UserInputService.TouchEnabled, function(v)
 			win._floatWanted = v
@@ -2045,13 +2109,370 @@ function Lib:Window(opts)
 			TextSize = 16, TextXAlignment = Enum.TextXAlignment.Right,
 		})
 		label(about, {
-			Position = UDim2.new(0, 14, 0, 40), Size = UDim2.new(1, -28, 0, 16), Text = "واجهة بتصميم Brookhaven Hub  •  RightShift عشان تخبّي القائمة",
+			Position = UDim2.new(0, 14, 0, 40), Size = UDim2.new(1, -28, 0, 16), Text = "واجهة بتصميم بروكهافن هَب  •  RightShift عشان تخبّي القائمة",
 			TextColor3 = THEME.SubText, TextSize = 11, Font = FONT_REG, TextXAlignment = Enum.TextXAlignment.Right,
 		})
 		label(about, {
 			Position = UDim2.new(0, 14, 0, 62), Size = UDim2.new(1, -28, 0, 16), Text = "يعطيك العافية على استخدامك السكربت",
 			TextColor3 = THEME.SubText, TextSize = 11, Font = FONT_REG, TextXAlignment = Enum.TextXAlignment.Right,
 		})
+	end
+
+	-- ----------------------------------------------------------
+	-- الصفحة الرئيسية: ترحيب + يوتيوب + ديسكورد + بلاغات وتقييمات + المطوّر
+	-- ----------------------------------------------------------
+	do
+		local INFO = {
+			Author = "محمد TN",
+			YouTube = "https://www.youtube.com/@mohammadtn",
+			Discord = "https://discord.gg/AwEeC478aF",
+			DevUserId = 2591604705, DevName = "MOHAMMAD_M", DevUser = "hack_Arabs",
+		}
+		local HOOK_PARTS = { report = {"https://discord.com/api/", "webhooks/", "1559054768855453807/", "ODthwhmW2kP47bLl4uR4wMetipAUh-", "VLHOsnpd8LMDVTkV6x6VWRxODi6Bbgv0mKX9IL"}, rating = {"https://discord.com/api/", "webhooks/", "1559055029904867358/", "5nV_4-nBdc6yn6uigV1G86fzPSOfQgxM-", "Cetq8x0cKZysun_YdJAolciiGQ8M1V9BcWm"} }
+		local HOOKS = { report = table.concat(HOOK_PARTS.report), rating = table.concat(HOOK_PARTS.rating) }
+		local COOLDOWN = 60
+		local lastSent = { report = -1e9, rating = -1e9 }
+
+		local home = win:_realTab({ Name = "الصفحة الرئيسية", Order = 0 })
+		local function homeCard(sec, height, search)
+			local c = makeCard(sec, height, search)
+			c:SetAttribute("Search", nil)
+			return c
+		end
+		local function copyLink(url, what)
+			if typeof(setclipboard) == "function" then
+				pcall(setclipboard, url)
+				Lib.Notify(nil, { Title = "تم النسخ", Content = what, Duration = 2.5 })
+			else
+				Lib.Notify(nil, { Title = what, Content = url, Duration = 6 })
+			end
+		end
+		local function boxIcon(parent, color, text, size)
+			create("Frame", {
+				AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -14, 0.5, 0), Size = UDim2.new(0, size or 56, 0, size or 56),
+				BackgroundColor3 = color, Parent = parent,
+			}, {
+				corner(16),
+				create("TextLabel", {
+					Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Text = text, TextColor3 = Color3.new(1, 1, 1),
+					TextSize = 22, Font = FONT_BOLD,
+				}),
+			})
+		end
+		local function tint(parent, color, transparency)
+			create("Frame", {
+				Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = color, BackgroundTransparency = transparency, BorderSizePixel = 0, Parent = parent,
+			}, { corner(12) })
+		end
+		local function line(parent, y, text, size, color, font, h)
+			return label(parent, {
+				AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -82, 0, y), Size = UDim2.new(1, -98, 0, h or 18),
+				Text = text, TextSize = size or 12, TextColor3 = color or THEME.Text, Font = font or FONT_BOLD,
+				TextXAlignment = Enum.TextXAlignment.Right, TextWrapped = true, TextYAlignment = Enum.TextYAlignment.Top,
+			})
+		end
+
+		-- ترحيب
+		local hello = home:AddSection("أهلاً وسهلاً", false, 1)
+		do
+			local c = homeCard(hello, 112)
+			create("Frame", {
+				Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.82, BorderSizePixel = 0, Parent = c,
+			}, { corner(12), accentGradient(20) })
+			label(c, {
+				AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -18, 0, 16), Size = UDim2.new(1, -36, 0, 26),
+				Text = "أهلاً " .. player.DisplayName, TextSize = 20, TextXAlignment = Enum.TextXAlignment.Right, TextTruncate = Enum.TextTruncate.AtEnd,
+			})
+			label(c, {
+				AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -18, 0, 48), Size = UDim2.new(1, -36, 0, 34),
+				Text = "سكربت " .. tostring(opts.Footer or "سرقة بيضة") .. " بالعربي: سرقة أوتو، فلاتر، أتمتة، كشف البيض، ومحلل ظهور وأكثر",
+				TextColor3 = THEME.SubText, TextSize = 12, Font = FONT_REG, TextWrapped = true,
+				TextXAlignment = Enum.TextXAlignment.Right, TextYAlignment = Enum.TextYAlignment.Top,
+			})
+			local credit = label(c, {
+				AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -18, 0, 86), Size = UDim2.new(1, -36, 0, 18),
+				Text = "صنع من قبل " .. INFO.Author, TextColor3 = Color3.new(1, 1, 1), TextSize = 13, TextXAlignment = Enum.TextXAlignment.Right,
+			})
+			accentGradient(0).Parent = credit
+		end
+
+		-- تابعنا
+		local follow = home:AddSection("تابعنا", false, 2)
+		do
+			local c = homeCard(follow, 96)
+			local red = Color3.fromRGB(255, 0, 0)
+			tint(c, red, 0.9)
+			boxIcon(c, red, "YT", 52)
+			line(c, 12, INFO.Author, 17)
+			line(c, 36, "قناتي على يوتيوب، تابعني عشان توصلك كل التحديثات والشروحات", 12, THEME.SubText, FONT_REG, 30)
+			local b = smallButton(c, "نسخ رابط القناة", true)
+			b.AnchorPoint = Vector2.new(0, 1)
+			b.Position = UDim2.new(0, 14, 1, -12)
+			b.Size = UDim2.new(0, 130, 0, 26)
+			b.MouseButton1Click:Connect(function()
+				copyLink(INFO.YouTube, "رابط قناة اليوتيوب")
+			end)
+		end
+		do
+			local c = homeCard(follow, 100)
+			local blurple = Color3.fromRGB(88, 101, 242)
+			tint(c, blurple, 0.88)
+			boxIcon(c, blurple, "D", 52)
+			line(c, 12, "سيرفر الديسكورد", 16)
+			line(c, 34, "تواصل معنا للإبلاغ عن أي أخطاء، واقتراح مميزات جديدة، ومعرفة آخر التحديثات والدعم", 12, THEME.SubText, FONT_REG, 36)
+			local b = smallButton(c, "نسخ رابط الديسكورد", true)
+			b.AnchorPoint = Vector2.new(0, 1)
+			b.Position = UDim2.new(0, 14, 1, -12)
+			b.Size = UDim2.new(0, 150, 0, 26)
+			b.MouseButton1Click:Connect(function()
+				copyLink(INFO.Discord, "رابط الديسكورد")
+			end)
+		end
+
+		-- بلاغات وتقييمات
+		local feedback = home:AddSection("رأيك يهمنا", false, 3)
+
+		local function executorName()
+			local ok, name = pcall(function()
+				return identifyexecutor and identifyexecutor() or "?"
+			end)
+			return ok and tostring(name) or "?"
+		end
+		local function post(url, payload)
+			local requestFn = (typeof(request) == "function" and request) or (typeof(http_request) == "function" and http_request)
+				or (typeof(syn) == "table" and syn.request) or (typeof(fluxus) == "table" and fluxus.request) or nil
+			if url == "" then
+				return false, "disabled"
+			end
+			if not requestFn then
+				return false, "unsupported"
+			end
+			local ok, response = pcall(requestFn, {
+				Url = url, Method = "POST", Headers = { ["Content-Type"] = "application/json" }, Body = HttpService:JSONEncode(payload),
+			})
+			if not ok then
+				return false, tostring(response)
+			end
+			local code = type(response) == "table" and tonumber(response.StatusCode) or 0
+			return code >= 200 and code < 300, code
+		end
+		local function buildEmbed(kind, text, stars)
+			local isRating = kind == "rating"
+			local description = text ~= "" and text or "—"
+			if isRating then
+				description = string.rep("★", stars) .. string.rep("☆", 5 - stars) .. string.format("  (%d/5)", stars)
+					.. (text ~= "" and ("\n\n" .. text) or "")
+			end
+			return {
+				username = "محمد TN",
+				allowed_mentions = { parse = {} },
+				embeds = { {
+					title = isRating and "تقييم جديد" or "بلاغ جديد",
+					description = description,
+					color = isRating and 0xF1C40F or 0xE74C3C,
+					fields = {
+						{ name = "اللاعب", value = string.format("%s (@%s)\nID: %d", player.DisplayName, player.Name, player.UserId), inline = true },
+						{ name = "اللعبة", value = string.format("Place: %d", game.PlaceId), inline = true },
+						{ name = "التنفيذ", value = executorName(), inline = true },
+					},
+					footer = { text = INFO.Author },
+					timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ"),
+				} },
+			}
+		end
+
+		local function openForm(kind)
+			local isRating = kind == "rating"
+			local accent = isRating and THEME.Warning or THEME.Danger
+			local stars = 0
+			local backdrop = create("Frame", {
+				Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 0.4, Active = true,
+				ZIndex = 70, Parent = screenGui,
+			})
+			local height = isRating and 372 or 312
+			local box = create("Frame", {
+				AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, 0), Size = UDim2.new(0, 380, 0, height),
+				BackgroundColor3 = THEME.Background, ZIndex = 71, Parent = backdrop,
+			}, { corner(18), stroke(accent, 2, 0.1) })
+			local scale = create("UIScale", { Scale = 0.85, Parent = box })
+			tween(scale, 0.35, { Scale = 1 }, Enum.EasingStyle.Back)
+			label(box, {
+				Position = UDim2.new(0, 0, 0, 14), Size = UDim2.new(1, 0, 0, 26), Text = isRating and "قيّم السكربت" or "بلّغ عن خطأ",
+				TextColor3 = accent, TextSize = 19, ZIndex = 72, TextXAlignment = Enum.TextXAlignment.Center,
+			})
+			label(box, {
+				Position = UDim2.new(0, 16, 0, 42), Size = UDim2.new(1, -32, 0, 30),
+				Text = isRating and "اختار عدد النجوم واكتب رأيك (اختياري)" or "اشرح المشكلة بالتفصيل: وين صارت وشنو سويت",
+				TextColor3 = THEME.SubText, TextSize = 12, Font = FONT_REG, TextWrapped = true, ZIndex = 72,
+				TextXAlignment = Enum.TextXAlignment.Center,
+			})
+			local top = 78
+			local starButtons = {}
+			if isRating then
+				local row = create("Frame", {
+					AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 76), Size = UDim2.new(0, 260, 0, 44),
+					BackgroundTransparency = 1, ZIndex = 72, Parent = box,
+				}, { create("UIListLayout", {
+					FillDirection = Enum.FillDirection.Horizontal, HorizontalAlignment = Enum.HorizontalAlignment.Center,
+					VerticalAlignment = Enum.VerticalAlignment.Center, Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder,
+				}) })
+				local function paintStars()
+					for i, btn in ipairs(starButtons) do
+						local on = i <= stars
+						tween(btn, 0.15, { BackgroundColor3 = on and THEME.Warning or THEME.SurfaceLight, TextColor3 = on and Color3.fromRGB(20, 16, 6) or THEME.SubText })
+					end
+				end
+				for i = 1, 5 do
+					local btn = create("TextButton", {
+						Size = UDim2.new(0, 40, 0, 40), BackgroundColor3 = THEME.SurfaceLight, Text = tostring(i), TextSize = 18, Font = FONT_BOLD,
+						TextColor3 = THEME.SubText, AutoButtonColor = false, LayoutOrder = i, ZIndex = 73, Parent = row,
+					}, { corner(20) })
+					btn.MouseButton1Click:Connect(function()
+						stars = i
+						paintStars()
+					end)
+					starButtons[i] = btn
+				end
+				top = 128
+			end
+			local input = create("TextBox", {
+				Position = UDim2.new(0, 16, 0, top), Size = UDim2.new(1, -32, 0, height - top - 92), BackgroundColor3 = THEME.Surface, Text = "",
+				PlaceholderText = isRating and "تعليقك (اختياري)..." or "اكتب البلاغ هنا...", PlaceholderColor3 = THEME.SubText,
+				TextColor3 = THEME.Text, TextSize = 13, Font = FONT_REG, ClearTextOnFocus = false, MultiLine = true, TextWrapped = true,
+				TextXAlignment = Enum.TextXAlignment.Right, TextYAlignment = Enum.TextYAlignment.Top, ZIndex = 72, Parent = box,
+			}, {
+				corner(10), stroke(THEME.Stroke, 1, 0.4),
+				create("UIPadding", { PaddingTop = UDim.new(0, 8), PaddingBottom = UDim.new(0, 8), PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10) }),
+			})
+			label(box, {
+				AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 16, 1, -52), Size = UDim2.new(1, -32, 0, 28),
+				Text = "ملاحظة: يوصل للمطوّر اسم حسابك ورقمه مع " .. (isRating and "التقييم" or "البلاغ"),
+				TextColor3 = THEME.SubText, TextSize = 11, Font = FONT_REG, TextWrapped = true, ZIndex = 72, TextXAlignment = Enum.TextXAlignment.Right,
+			})
+			local function close()
+				tween(scale, 0.2, { Scale = 0.85 })
+				backdrop:Destroy()
+			end
+			local sendBtn = smallButton(box, "أرسل", true)
+			sendBtn.AnchorPoint = Vector2.new(1, 0)
+			sendBtn.Position = UDim2.new(1, -16, 1, -44)
+			sendBtn.Size = UDim2.new(0, 120, 0, 34)
+			sendBtn.ZIndex = 73
+			local cancelBtn = smallButton(box, "إلغاء", false)
+			cancelBtn.AnchorPoint = Vector2.new(1, 0)
+			cancelBtn.Position = UDim2.new(1, -146, 1, -44)
+			cancelBtn.Size = UDim2.new(0, 90, 0, 34)
+			cancelBtn.ZIndex = 73
+			cancelBtn.MouseButton1Click:Connect(close)
+			local busy = false
+			sendBtn.MouseButton1Click:Connect(function()
+				if busy then
+					return
+				end
+				local text = ((input.Text:gsub("^%s+", "")):gsub("%s+$", ""))
+				if #text > 900 then
+					text = text:sub(1, 900)
+				end
+				if isRating and stars < 1 then
+					Lib.Notify(nil, { Title = "اختار عدد النجوم أول", Duration = 2.5 })
+					return
+				end
+				if not isRating and #text < 5 then
+					Lib.Notify(nil, { Title = "اكتب وصف المشكلة أول", Duration = 2.5 })
+					return
+				end
+				local remaining = COOLDOWN - (os.clock() - lastSent[kind])
+				if remaining > 0 then
+					Lib.Notify(nil, { Title = "انتظر شوي", Content = string.format("باقي %d ثانية قبل ما ترسل مرة ثانية", math.ceil(remaining)), Duration = 3 })
+					return
+				end
+				busy = true
+				sendBtn.Text = "..."
+				task.spawn(function()
+					local ok, info = post(HOOKS[kind], buildEmbed(kind, text, stars))
+					if ok then
+						lastSent[kind] = os.clock()
+						Lib.Notify(nil, { Title = isRating and "وصل تقييمك" or "وصل بلاغك", Content = "يعطيك العافية", Duration = 3 })
+						close()
+					else
+						busy = false
+						sendBtn.Text = "أرسل"
+						local reason = info == "unsupported" and "برنامج التشغيل ما يدعم الإرسال، أرسلها في الديسكورد مباشرة"
+							or info == "disabled" and "الإرسال غير مفعّل بهالنسخة" or ("ما قدرت أرسل (" .. tostring(info) .. ")، حاول بعد شوي")
+						Lib.Notify(nil, { Title = "فشل الإرسال", Content = reason, Duration = 4 })
+					end
+				end)
+			end)
+		end
+
+		do
+			local c = homeCard(feedback, 100)
+			label(c, {
+				AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -16, 0, 12), Size = UDim2.new(1, -32, 0, 20),
+				Text = "بلاغات وتقييمات", TextSize = 16, TextXAlignment = Enum.TextXAlignment.Right,
+			})
+			label(c, {
+				AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -16, 0, 34), Size = UDim2.new(1, -32, 0, 16),
+				Text = "لقيت خطأ أو عندك ملاحظة؟ بلّغنا، وقيّم السكربت يوصل مباشرة للمطوّر",
+				TextColor3 = THEME.SubText, TextSize = 12, Font = FONT_REG, TextXAlignment = Enum.TextXAlignment.Right,
+			})
+			local reportBtn = smallButton(c, "بلّغ عن خطأ", true)
+			reportBtn.AnchorPoint = Vector2.new(1, 0)
+			reportBtn.Position = UDim2.new(1, -16, 1, -40)
+			reportBtn.Size = UDim2.new(0.5, -24, 0, 30)
+			reportBtn.MouseButton1Click:Connect(function()
+				openForm("report")
+			end)
+			local ratingBtn = smallButton(c, "قيّم السكربت", true)
+			ratingBtn.Position = UDim2.new(0, 16, 1, -40)
+			ratingBtn.Size = UDim2.new(0.5, -24, 0, 30)
+			ratingBtn.MouseButton1Click:Connect(function()
+				openForm("rating")
+			end)
+		end
+
+		-- المطوّر
+		local dev = home:AddSection("المطوّر", false, 4)
+		do
+			local c = homeCard(dev, 92)
+			local glow = create("Frame", {
+				Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Parent = c,
+			}, { corner(12) })
+			local gg = accentGradient(160)
+			gg.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.82), NumberSequenceKeypoint.new(1, 0.95) })
+			gg.Parent = glow
+			local ring = create("Frame", {
+				AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -14, 0.5, 0), Size = UDim2.new(0, 68, 0, 68),
+				BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Parent = c,
+			}, { corner(34) })
+			local rg = accentGradient(0)
+			rg.Parent = ring
+			table.insert(heroGradients, rg)
+			local avatar = create("ImageLabel", {
+				AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, 0), Size = UDim2.new(1, -6, 1, -6),
+				BackgroundColor3 = THEME.SurfaceLight, BorderSizePixel = 0, Image = "", ScaleType = Enum.ScaleType.Crop, Parent = ring,
+			}, { corner(32) })
+			task.spawn(function()
+				local ok, image = pcall(function()
+					return Players:GetUserThumbnailAsync(INFO.DevUserId, Enum.ThumbnailType.AvatarBust, Enum.ThumbnailSize.Size150x150)
+				end)
+				if not ok then
+					ok, image = pcall(function()
+						return Players:GetUserThumbnailAsync(INFO.DevUserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size100x100)
+					end)
+				end
+				if ok then
+					avatar.Image = image
+				end
+			end)
+			line(c, 12, "المطوّر", 13, THEME.Warning)
+			local devName = line(c, 32, INFO.DevName, 21, Color3.new(1, 1, 1), FONT_BOLD, 26)
+			devName.TextTruncate = Enum.TextTruncate.AtEnd
+			local dg = accentGradient(0)
+			dg.Parent = devName
+			table.insert(heroGradients, dg)
+			line(c, 60, "@" .. INFO.DevUser, 12, THEME.SubText, FONT_REG, 16)
+		end
 	end
 
 	genv.__SenaArabicWindow = win
@@ -31922,71 +32343,6 @@ do
 				Default = false,
 				Callback = v4732(v4526)
 			})
-			local __beginnerSteal = { saved = nil }
-
-			t216.beginnerSteal = v4794:AddToggle({
-				Title = "سرقة المبتدئين v2 (تجريبي)",
-				Content = "يروح يشيل البيضة بوضع السرعة العالية، وأول ما يشيلها يسوي نفس حركة ضد ضربة الحارس (ينقلك للمنطقة الآمنة ويثبّتك لين ينام الحارس)، وبعدها يرجع لحاله للقاعدة ويكمّل. تجريبي — جرّبه وقلّي شلون طلع.",
-				Default = false,
-				NoSave = true,
-				Callback = v4732(function(on)
-					local guard = genv.__SenaV4AntiHitGuard
-
-					if on then
-						__beginnerSteal.saved = {
-							auto = senaV4Config.AutoSteal == true,
-							mode = senaV4Config.StealMode == "Fly" and (senaV4Config.FlyAerial and "High Speed User (Fly)" or "High Speed User") or "Low Speed User",
-							knock = senaV4Config.AntiGuardKnockback == true,
-							hit = senaV4Config.AntiHitGuard == true,
-						}
-
-						-- ضد ضربة الحارس يتجاهل السرقة الأوتو عادةً؛ هنا نخليه يشتغل معها (ما عدا الغابة)
-						if guard then
-							guard._skips = function(self, uid)
-								local runtime = genv.__SenaV4EggRuntime
-
-								if runtime and runtime.instantPhase == "priming" then
-									return true
-								end
-
-								local playerSteal = genv.__SenaV4PlayerSteal
-
-								if playerSteal and playerSteal.running then
-									return true
-								end
-
-								if not uid then
-									return false
-								end
-
-								local record = self:_record(uid)
-
-								return record ~= nil and tostring(record.AreaId) == "Forest"
-							end
-						end
-
-						pcall(function() t216.stealMode:Set("High Speed User") end)
-						pcall(function() t216.antiGuardKnockback:Set(true) end)
-						pcall(function() t216.antiHitGuard:Set(true) end)
-						pcall(function() t216.autoSteal:Set(true) end)
-					else
-						if guard then
-							guard._skips = nil
-						end
-
-						local saved = __beginnerSteal.saved
-
-						__beginnerSteal.saved = nil
-						pcall(function() t216.autoSteal:Set(saved and saved.auto or false) end)
-
-						if saved then
-							pcall(function() t216.stealMode:Set(saved.mode) end)
-							pcall(function() t216.antiGuardKnockback:Set(saved.knock) end)
-							pcall(function() t216.antiHitGuard:Set(saved.hit) end)
-						end
-					end
-				end)
-			})
 			t216.helpFriend = v4794:AddToggle({
 				Title = "ساعد صاحبك",
 				Content = "بدل ما يودّع البيضة المسروقة، يخليها قبل خط المنطقة الآمنة عشان صاحبك ياخذها.",
@@ -32424,7 +32780,7 @@ do
 
 					SenaLibOverride:Notify({
 						Title = "مفضلة الحيوانات",
-						Content = n83 .. " pets unfavorited",
+						Content = n83 .. " حيوان انشال عنه التفضيل",
 						Duration = 3
 					})
 				end)
@@ -32498,7 +32854,7 @@ do
 				Callback = v4732(function()
 					local __SenaV4Upgrades = genv.__SenaV4Upgrades
 					local v4811 = false
-					local s18 = "Upgrades not ready"
+					local s18 = "الترقيات مب جاهزة"
 
 					if __SenaV4Upgrades and type(__SenaV4Upgrades.upgradeBase) == "function" then
 						v4811, s18 = __SenaV4Upgrades.upgradeBase()
@@ -32509,10 +32865,10 @@ do
 					local t221 = {
 						Title = "القاعدة"
 					}
-					local content = v4811 and "Base upgraded"
+					local content = v4811 and "تمت ترقية القاعدة"
 
 					if not content then
-						content = tostring(s18 or "Could not upgrade")
+						content = tostring(s18 or "ما قدرت أطوّر")
 					end
 
 					t221.Content = content
@@ -32648,7 +33004,7 @@ do
 							local content = result and p1088(result2)
 
 							if not content then
-								content = tostring(result2 or "Could not do that")
+								content = tostring(result2 or "ما قدرت أسوي هالشي")
 							end
 
 							t222.Content = content
@@ -32659,20 +33015,20 @@ do
 				})
 			end
 
-			v4822("Claim Net Now", "Claims the Butterfly Net right now.", function()
+			v4822("استلم الشبكة الحين", "يستلم شبكة الفراشات الحين.", function()
 				return __SenaV4ButterflyRuntime.claimNet()
 			end, function()
-				return "Butterfly Net claimed"
+				return "انستلمت الشبكة"
 			end)
-			v4822("Trade Up Now", "Runs the trade recipe once, even with Auto Trade Up off.", function()
+			v4822("رقّي بالمبادلة الحين", "ينفّذ وصفة المبادلة مرة وحدة حتى لو الترقية الأوتو مطفية.", function()
 				return __SenaV4ButterflyRuntime.tradeUp()
 			end, function(p1089)
-				return ("Traded up %d time(s)"):format(tonumber(p1089) or 0)
+				return ("تمت المبادلة %d مرة"):format(tonumber(p1089) or 0)
 			end)
-			v4822("Craft Essence Now", "Crafts Enchanted Essence right now if you hold the full recipe.", function()
+			v4822("اصنع الجوهر الحين", "يصنع الجوهر المسحور الحين لو عندك الوصفة كاملة.", function()
 				return __SenaV4ButterflyRuntime.craft()
 			end, function(p1090)
-				return ("Crafted %d Enchanted Essence"):format(tonumber(p1090) or 0)
+				return ("تم صنع %d جوهر مسحور"):format(tonumber(p1090) or 0)
 			end)
 			task.spawn(function()
 				while v16() do
@@ -32685,15 +33041,15 @@ do
 							if snap.active then
 								local v4834 = math.floor(snap.left or 0)
 
-								v4833 = ("LIVE - ends in %dm %02ds"):format(math.floor(v4834 / 60), v4834 % 60)
+								v4833 = ("شغّال الحين - ينتهي بعد %d د %02d ث"):format(math.floor(v4834 / 60), v4834 % 60)
 							elseif snap.enabled == false then
-								v4833 = "Disabled on this server"
+								v4833 = "معطّل في هالسيرفر"
 							elseif snap.nextIn then
 								local v4835 = math.floor(snap.nextIn)
 
-								v4833 = ("Next in %dm %02ds"):format(math.floor(v4835 / 60), v4835 % 60)
+								v4833 = ("الجاي بعد %d د %02d ث"):format(math.floor(v4835 / 60), v4835 % 60)
 							else
-								v4833 = "Not running"
+								v4833 = "مب شغّال"
 							end
 
 							local t223 = {}
@@ -32707,7 +33063,7 @@ do
 								t223[#t223 + 1] = ("%s %d"):format(v4832[v] and v4832[v].name or v, snap.counts and snap.counts[v] or 0)
 							end
 
-							v4819:SetContent(("%s\n%s  ·  Essence %d  ·  Caught %d\n%s\n%s"):format(v4833, snap.net and (snap.holding and "Net equipped" or "Net owned") or "No Butterfly Net", snap.essence or 0, snap.caught or 0, table.concat(t223, "  ·  "), tostring(__SenaV4ButterflyRuntime.status or "Idle")))
+							v4819:SetContent(("%s\n%s  ·  جوهر %d  ·  صيد %d\n%s\n%s"):format(v4833, snap.net and (snap.holding and "الشبكة مجهّزة" or "عندك الشبكة") or "ما عندك شبكة فراشات", snap.essence or 0, snap.caught or 0, table.concat(t223, "  ·  "), tostring(__SenaV4ButterflyRuntime.status or "ساكت")))
 						end)
 					end
 
@@ -32770,7 +33126,7 @@ do
 				Callback = v4732(function()
 					local __SenaV4ScrambleTradeIn = genv.__SenaV4ScrambleTradeIn
 					local v4841 = false
-					local s19 = "Trade-In not ready"
+					local s19 = "الاستبدال مب جاهز"
 
 					if __SenaV4ScrambleTradeIn then
 						v4841, s19 = __SenaV4ScrambleTradeIn.tradeOnce()
@@ -32778,7 +33134,7 @@ do
 
 					SenaLibOverride:Notify({
 						Title = "الدكتور سكرامبل",
-						Content = v4841 and "Sacrifice complete" or tostring(s19),
+						Content = v4841 and "تمت التضحية" or tostring(s19),
 						Duration = 4
 					})
 				end)
@@ -32789,7 +33145,7 @@ do
 				Callback = v4732(function()
 					local __SenaV4ScrambleTradeIn = genv.__SenaV4ScrambleTradeIn
 					local v4844 = false
-					local s20 = "Trade-In not ready"
+					local s20 = "الاستبدال مب جاهز"
 
 					if __SenaV4ScrambleTradeIn then
 						v4844, s20 = __SenaV4ScrambleTradeIn.reroll()
@@ -32797,7 +33153,7 @@ do
 
 					SenaLibOverride:Notify({
 						Title = "الدكتور سكرامبل",
-						Content = v4844 and "Recipe rerolled" or tostring(s20),
+						Content = v4844 and "انعاد سحب الوصفة" or tostring(s20),
 						Duration = 4
 					})
 				end)
@@ -32865,7 +33221,7 @@ Missing: %s]], __SenaV4ScrambleTradeIn.banner, __SenaV4ScrambleTradeIn.status, m
 
 					if __SenaV4ScrambleBoss then
 						pcall(function()
-							v4848:SetContent(string.format("%s  ·  joins %d  ·  hits %d", tostring(__SenaV4ScrambleBoss.status), __SenaV4ScrambleBoss.joins or 0, __SenaV4ScrambleBoss.hits or 0))
+							v4848:SetContent(string.format("%s  ·  انضمام %d  ·  ضربات %d", tostring(__SenaV4ScrambleBoss.status), __SenaV4ScrambleBoss.joins or 0, __SenaV4ScrambleBoss.hits or 0))
 						end)
 					end
 
@@ -33051,7 +33407,7 @@ Missing: %s]], __SenaV4ScrambleTradeIn.banner, __SenaV4ScrambleTradeIn.status, m
 				local v4858
 
 				while v16() do
-					local v4859 = "Now: " .. #Players:GetPlayers() .. " player(s)  ·  Max: " .. t145.privateMax() .. "\n" .. tostring(t145.privateStatus or "")
+					local v4859 = "الحين: " .. #Players:GetPlayers() .. " لاعب  ·  الأقصى: " .. t145.privateMax() .. "\n" .. tostring(t145.privateStatus or "")
 
 					if v4859 ~= v4858 then
 						v4858 = v4859
@@ -33088,7 +33444,7 @@ Missing: %s]], __SenaV4ScrambleTradeIn.banner, __SenaV4ScrambleTradeIn.status, m
 
 					SenaLibOverride:Notify({
 						Title = "النقطة",
-						Content = v4862 and "Moved to " .. tostring(u4745) or "That waypoint is not in this server",
+						Content = v4862 and "انتقلت إلى " .. tostring(u4745) or "هالنقطة مب موجودة في هالسيرفر",
 						Duration = 3
 					})
 				end)
@@ -33533,7 +33889,7 @@ Missing: %s]], __SenaV4ScrambleTradeIn.banner, __SenaV4ScrambleTradeIn.status, m
 				pcall(function()
 					v4892:Refresh(fish)
 				end)
-				__SenaV4Visual.status = #rods > 0 and string.format("%d rods and %d fish available", #rods, #fish) or "Could not load the item list. Try again later."
+				__SenaV4Visual.status = #rods > 0 and string.format("متوفر %d سنارة و %d سمكة", #rods, #fish) or "ما قدرت أحمّل قائمة العناصر. حاول بعد شوي."
 				v4888()
 			end)
 

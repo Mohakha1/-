@@ -8172,7 +8172,7 @@ do
 
 				local now = os.clock()
 
-				if now - (obj._espLastTick or 0) < 0.4 then
+				if now - (obj._espLastTick or 0) < 0.2 then
 					return
 				end
 
@@ -15289,6 +15289,10 @@ do
 
 						__SenaV4EggEsp.Adornee = Hitbox
 
+						if p501._espGrace then
+							p501._espGrace[child.Name] = nil
+						end
+
 						local v1758 = p501.catalog.resolve(v1751)
 						local Icon = __SenaV4EggEsp:FindFirstChild("Icon")
 						local icon = config.espIcon and type(v1758.icon) == "string" and v1758.icon ~= "" and v1758.icon or nil
@@ -15359,12 +15363,24 @@ do
 						__SenaV4EggHighlight.OutlineColor = rarityColor
 						__SenaV4EggHighlight.OutlineTransparency = 0
 					else
-						if __SenaV4EggEsp then
-							__SenaV4EggEsp:Destroy()
+						p501._espGrace = p501._espGrace or {}
+
+						local graceNow = os.clock()
+						local graceFrom = p501._espGrace[child.Name]
+
+						if not graceFrom then
+							graceFrom = graceNow
+							p501._espGrace[child.Name] = graceNow
 						end
 
-						if __SenaV4EggHighlight then
-							__SenaV4EggHighlight:Destroy()
+						if graceNow - graceFrom > 1.5 or not config.espEnabled then
+							if __SenaV4EggEsp then
+								__SenaV4EggEsp:Destroy()
+							end
+
+							if __SenaV4EggHighlight then
+								__SenaV4EggHighlight:Destroy()
+							end
 						end
 					end
 				end
@@ -30436,6 +30452,7 @@ do
 			end
 		end
 
+		local panelSigs = {}
 		task.spawn(function()
 			while v16() do
 				pcall(function()
@@ -30461,7 +30478,59 @@ do
 					"eggdata"
 				}) do
 					if v3764(v) then
-						pcall(v3771, v)
+						local okSig, sig = pcall(function()
+							local function ser(x, d)
+								if type(x) ~= "table" then
+									return tostring(x)
+								end
+
+								if d > 4 then
+									return "?"
+								end
+
+								local keys = {}
+
+								for k in pairs(x) do
+									keys[#keys + 1] = k
+								end
+
+								table.sort(keys, function(a, b)
+									return tostring(a) < tostring(b)
+								end)
+
+								local out = {}
+
+								for _, k in ipairs(keys) do
+									out[#out + 1] = tostring(k) .. "=" .. ser(x[k], d + 1)
+								end
+
+								return "{" .. table.concat(out, ",") .. "}"
+							end
+
+							if v == "checker" then
+								return ser({ t175.scan(), t175.picked }, 0)
+							elseif v == "logs" then
+								return ser(t174, 0)
+							elseif v == "eggs" then
+								return ser(EggState2.ReadOwnerEggs(LocalPlayer.UserId), 0)
+							elseif v == "eggdata" then
+								return ser({ t176.history, t176.category, t176.filter, t176.lastAlert, t176.onlineCount, t176.knownFieldUids }, 0)
+							elseif v == "inventory" then
+								return ser((Save.Peek or Save.Get)(), 0)
+							end
+
+							return nil
+						end)
+
+						panelSigs = panelSigs or {}
+
+						local now = os.clock()
+						local prev = panelSigs[v]
+
+						if not okSig or sig == nil or not prev or prev.sig ~= sig or now - prev.at > 10 then
+							panelSigs[v] = { sig = sig, at = now }
+							pcall(v3771, v)
+						end
 					end
 				end
 

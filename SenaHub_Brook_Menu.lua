@@ -27458,17 +27458,23 @@ do
 			gotoButton.MouseButton1Click:Connect(function()
 				v3698()
 
-				local Character = game:GetService("Players").LocalPlayer.Character
-				local HumanoidRootPart = Character and Character:FindFirstChild("HumanoidRootPart")
-				local Humanoid = Character and Character:FindFirstChildOfClass("Humanoid")
+				local runtime = genv.__SenaV4EggRuntime
 
-				if not HumanoidRootPart or not Humanoid or Humanoid.Health <= 0 then
-					v4901(gotoButton, "الشخصية مب جاهزة", "روح للبيضة")
+				if not runtime or type(runtime.queueManual) ~= "function" then
+					v4901(gotoButton, "النظام مب جاهز", "روح للبيضة")
 
 					return
 				end
 
-				local bestRecord, bestPosition, bestDistance
+				if senaV4Config.AutoSteal then
+					v4901(gotoButton, "طفّ السرقة الأوتو أول", "روح للبيضة")
+
+					return
+				end
+
+				local Character = game:GetService("Players").LocalPlayer.Character
+				local HumanoidRootPart = Character and Character:FindFirstChild("HumanoidRootPart")
+				local bestUid, bestDistance
 
 				for uid in pairs(t175.picked) do
 					local record
@@ -27478,39 +27484,47 @@ do
 					end)
 
 					local position = record and (record.BottomCFrame and record.BottomCFrame.Position or record.BoundsCFrame and record.BoundsCFrame.Position)
+					local distance = position and HumanoidRootPart and (position - HumanoidRootPart.Position).Magnitude or 0
 
-					if position then
-						local distance = (position - HumanoidRootPart.Position).Magnitude
-
-						if not bestDistance or distance < bestDistance then
-							bestRecord, bestPosition, bestDistance = record, position, distance
-						end
+					if position and (not bestDistance or distance < bestDistance) then
+						bestUid, bestDistance = uid, distance
 					end
 				end
 
-				if not bestRecord then
+				if not bestUid then
 					v4901(gotoButton, "اختار بيضة أول", "روح للبيضة")
 
 					return
 				end
 
-				local runtime = genv.__SenaV4EggRuntime
-				local destination
-
-				if runtime and type(runtime._resolveEggDestination) == "function" then
-					pcall(function()
-						destination = runtime:_resolveEggDestination(bestRecord, HumanoidRootPart, Humanoid)
+				-- نفس طريق "اسرق المحدد": المحرك يروح للبيضة بنفس وضع السرقة، وأول ما يوصل ويبي يشيلها نوقفه بدل ما يسرق
+				runtime._goOnlyUid = bestUid
+				runtime._requestCarry = function()
+					runtime._requestCarry = nil
+					runtime._goOnlyUid = nil
+					task.defer(function()
+						pcall(function()
+							runtime:clearManual()
+						end)
+						pcall(t175.refresh)
 					end)
+					v4901(gotoButton, "وصلت للبيضة", "روح للبيضة")
 				end
+				runtime:queueManual({ bestUid })
+				gotoButton.Text = "جاي للبيضة..."
 
-				if not destination then
-					destination = CFrame.new(bestPosition.X, bestPosition.Y + 2.5, bestPosition.Z)
-				end
-
-				HumanoidRootPart.CFrame = destination
-				HumanoidRootPart.AssemblyLinearVelocity = Vector3.zero
-				HumanoidRootPart.AssemblyAngularVelocity = Vector3.zero
-				v4901(gotoButton, "وصلت للبيضة", "روح للبيضة")
+				task.delay(45, function()
+					if runtime._goOnlyUid == bestUid then
+						runtime._requestCarry = nil
+						runtime._goOnlyUid = nil
+						pcall(function()
+							runtime:clearManual()
+						end)
+						if gotoButton and gotoButton.Parent then
+							gotoButton.Text = "روح للبيضة"
+						end
+					end
+				end)
 			end)
 			stopButton.MouseButton1Click:Connect(function()
 				v3698()
@@ -27518,6 +27532,8 @@ do
 				local runtime = genv.__SenaV4EggRuntime
 
 				if runtime and type(runtime.clearManual) == "function" then
+					runtime._requestCarry = nil
+					runtime._goOnlyUid = nil
 					pcall(function()
 						runtime:clearManual()
 					end)

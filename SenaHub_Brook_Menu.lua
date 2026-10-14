@@ -224,6 +224,7 @@ end
 -- ---------------------------------------------------------------
 local Lib = {}
 Lib.__index = Lib
+Lib.Theme = THEME
 
 function Lib.Notify(selfOrOpts, maybeOpts)
 	local opts = maybeOpts
@@ -305,12 +306,30 @@ end
 -- ---------------------------------------------------------------
 -- بطاقات العناصر
 -- ---------------------------------------------------------------
+-- أسماء أزرار الإجراء حسب العنوان
+local BUTTON_RULES = {
+	{ "اختبار", "جرّب" }, { "جرّب", "جرّب" }, { "امسح", "امسح" }, { "مسح", "امسح" }, { "افتح", "افتح" }, { "فتح", "افتح" },
+	{ "إيقاف", "إيقاف" }, { "ارجع", "ارجع" }, { "انتقل", "انتقل" }, { "غيّر السيرفر", "انتقل" }, { "طوّر", "طوّر" },
+	{ "ترقية", "طوّر" }, { "بيع", "بيع" }, { "افقس", "افقس" }, { "حط ", "حط" }, { "استبدال", "استبدل" }, { "استخدم", "استخدم" },
+	{ "شيل", "شيل" }, { "طلّع", "طلّع" }, { "ضيفه", "ضيف" }, { "وضع التصوير", "شغّل" }, { "طبّق", "طبّق" },
+	{ "إلغاء", "إلغاء" }, { "حدّث", "حدّث" }, { "سكّر", "سكّر" },
+}
+local function buttonLabel(title)
+	title = tostring(title or "")
+	for _, r in ipairs(BUTTON_RULES) do
+		if string.find(title, r[1], 1, true) then
+			return r[2]
+		end
+	end
+	return "نفّذ"
+end
+
 local Section = {}
 Section.__index = Section
 
 local function makeCard(sec, minH, searchText)
 	local tab = sec.Tab
-	tab._order = tab._order + 1
+	sec._n = sec._n + 1
 	local cardStroke = stroke(THEME.Stroke, 1, 0.5)
 	local c = create("Frame", {
 		Size = UDim2.new(1, 0, 0, minH or 54),
@@ -318,7 +337,7 @@ local function makeCard(sec, minH, searchText)
 		BackgroundColor3 = THEME.Surface,
 		BackgroundTransparency = 0.12,
 		BorderSizePixel = 0,
-		LayoutOrder = tab._order,
+		LayoutOrder = sec._base + sec._n,
 		Parent = tab.Page,
 	}, { corner(12), cardStroke })
 	c:SetAttribute("Search", tostring(searchText or ""))
@@ -409,9 +428,9 @@ end
 
 function Section:AddSubSection(name)
 	local tab = self.Tab
-	tab._order = tab._order + 1
+	self._n = self._n + 1
 	local f = create("Frame", {
-		BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 22), LayoutOrder = tab._order, Parent = tab.Page,
+		BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 22), LayoutOrder = self._base + self._n, Parent = tab.Page,
 	})
 	f:SetAttribute("Section", true)
 	local t = label(f, {
@@ -455,7 +474,7 @@ function Section:AddButton(o)
 		BackgroundTransparency = 1, AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 14, 0.5, 0),
 		Size = UDim2.new(0, reserve - 24, 0, 30), Parent = card,
 	}, { create("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder }) })
-	local main = smallButton(holder, o.SubTitle and "افتح" or "نفّذ", true)
+	local main = smallButton(holder, o.SubTitle and "افتح" or (o.ButtonText or buttonLabel(o.Title)), true)
 	main.Size = UDim2.new(0, o.SubTitle and 70 or 88, 1, 0)
 	main.LayoutOrder = 1
 	main.MouseButton1Click:Connect(function()
@@ -970,10 +989,11 @@ end
 local Tab = {}
 Tab.__index = Tab
 
-function Tab:AddSection(name)
-	self._order = self._order + 1
+function Tab:AddSection(name, flat, prio, origTab, pathName)
+	self._secCount = (self._secCount or 0) + 1
+	local base = (prio or self._secCount) * 1000
 	local s = create("Frame", {
-		Size = UDim2.new(1, 0, 0, 26), BackgroundTransparency = 1, LayoutOrder = self._order, Parent = self.Page,
+		Size = UDim2.new(1, 0, 0, 26), BackgroundTransparency = 1, LayoutOrder = base, Parent = self.Page,
 	})
 	s:SetAttribute("Section", true)
 	local bar = create("Frame", {
@@ -999,11 +1019,69 @@ function Tab:AddSection(name)
 	text_:GetPropertyChangedSignal("TextBounds"):Connect(fit)
 	fit()
 	return setmetatable({
-		Tab = self, Window = self.Window, _keys = {}, Path = self.Name .. "/" .. tostring(name),
+		Tab = self, Window = self.Window, _keys = {}, _base = base, _n = 0,
+		Path = (origTab or self.Name) .. "/" .. tostring(pathName or name),
 	}, Section)
 end
 
-for _, m in ipairs({ "AddToggle", "AddButton", "AddDropdown", "AddInput", "AddSlider", "AddParagraph", "AddActionList", "AddLiveChat", "AddSupportCard", "AddSubSection" }) do
+-- إطار حر داخل التبويب (لدمج نوافذ جاهزة)
+function Tab:AddFrame(height)
+	self._free = (self._free or 0) + 1
+	return create("Frame", {
+		BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, height or 200), LayoutOrder = self._free, Parent = self.Page,
+	})
+end
+
+-- شريط أزرار للتبديل بين أقسام (مثل التابات الصغيرة)
+function Tab:AddSwitcher(labels, callback)
+	self._free = (self._free or 0) + 1
+	local bar = create("Frame", {
+		BackgroundColor3 = THEME.Surface, BackgroundTransparency = 0.12, Size = UDim2.new(1, 0, 0, 40),
+		LayoutOrder = self._free, Parent = self.Page,
+	}, {
+		corner(12), stroke(THEME.Stroke, 1, 0.5),
+		create("UIPadding", { PaddingLeft = UDim.new(0, 6), PaddingRight = UDim.new(0, 6), PaddingTop = UDim.new(0, 5), PaddingBottom = UDim.new(0, 5) }),
+		create("UIListLayout", {
+			FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder,
+			HorizontalAlignment = Enum.HorizontalAlignment.Right, VerticalAlignment = Enum.VerticalAlignment.Center,
+		}),
+	})
+	bar:SetAttribute("Section", true)
+	local btns = {}
+	local obj = {}
+	local n = #labels
+	local function paint(sel)
+		for i, b in ipairs(btns) do
+			local on = i == sel
+			b.BackgroundColor3 = on and THEME.Accent or THEME.SurfaceLight
+			b.TextColor3 = on and Color3.new(1, 1, 1) or THEME.SubText
+		end
+	end
+	table.insert(UI.Repaint, function()
+		paint(obj.Selected or 1)
+	end)
+	for i, text in ipairs(labels) do
+		local b = create("TextButton", {
+			AutoButtonColor = false, BackgroundColor3 = THEME.SurfaceLight, Text = tostring(text), TextSize = 12, Font = FONT_BOLD,
+			TextColor3 = THEME.SubText, Size = UDim2.new(1 / n, -6, 1, 0), LayoutOrder = i, Parent = bar,
+		}, { corner(8) })
+		btns[i] = b
+		b.MouseButton1Click:Connect(function()
+			obj.Select(i)
+		end)
+	end
+	function obj.Select(i)
+		obj.Selected = i
+		paint(i)
+		safe(callback, i)
+	end
+	obj.Selected = 1
+	paint(1)
+	return obj
+end
+
+local TAB_METHODS = { "AddToggle", "AddButton", "AddDropdown", "AddInput", "AddSlider", "AddParagraph", "AddActionList", "AddLiveChat", "AddSupportCard", "AddSubSection" }
+for _, m in ipairs(TAB_METHODS) do
 	Tab[m] = function(self, ...)
 		if not self._default then
 			self._default = self:AddSection(self.Name)
@@ -1011,6 +1089,85 @@ for _, m in ipairs({ "AddToggle", "AddButton", "AddDropdown", "AddInput", "AddSl
 		return self._default[m](self._default, ...)
 	end
 end
+
+-- ---------------------------------------------------------------
+-- إعادة ترتيب وتسمية: كل (تبويب أصلي / قسم) يروح لتبويب جديد
+-- ---------------------------------------------------------------
+local TAB_ORDER = {
+	["السرقة"] = 1, ["كشف البيض"] = 2, ["الأتمتة"] = 3, ["الحيوانات"] = 4, ["الأحداث"] = 5, ["اللاعبين"] = 6,
+	["الحركة والأدمن"] = 7, ["السيرفر والتنقل"] = 8, ["الأدوات والحماية"] = 9, ["المظهر"] = 10, ["الإعدادات"] = 9999,
+}
+local ROUTES = {
+	["الرئيسية"] = {
+		["سرقة أوتو"] = { tab = "السرقة", prio = 1 }, ["فلتر البيض"] = { tab = "السرقة", prio = 2 },
+		["كشف البيض (ESP)"] = { tab = "السرقة", prio = 3 }, ["ويب هوك السرقة"] = { tab = "السرقة", prio = 4 },
+	},
+	["أوتو"] = {
+		["أتمتة البيض"] = { tab = "الأتمتة", prio = 1 }, ["تجهيز وجمع"] = { tab = "الأتمتة", prio = 2 },
+		["جهاز الجري"] = { tab = "الأتمتة", prio = 3 },
+	},
+	["الحيوانات"] = {
+		["بيع الحيوانات"] = { tab = "الحيوانات", prio = 1 }, ["بيع البيض"] = { tab = "الحيوانات", prio = 2 },
+		["مفضلة الحيوانات"] = { tab = "الحيوانات", prio = 3 }, ["دمج الحيوانات"] = { tab = "الحيوانات", prio = 4 },
+	},
+	["الأحداث"] = {
+		["موسم الفراشات"] = { tab = "الأحداث", prio = 1 }, ["حدث الدكتور سكرامبل"] = { tab = "الأحداث", prio = 2 },
+	},
+	["سرقة اللاعبين"] = {
+		["سرقة أوتو"] = { tab = "اللاعبين", prio = 1, name = "سرقة أوتو من اللاعبين" },
+		["سرقة من لاعب معيّن"] = { tab = "اللاعبين", prio = 2 }, ["سجل السرقات"] = { tab = "اللاعبين", prio = 3 },
+	},
+	["تلاعب الأدمن"] = {
+		["الحركة"] = { tab = "الحركة والأدمن", prio = 1 }, ["التقاط البيضة"] = { tab = "الحركة والأدمن", prio = 2 },
+		["حدث الحلقة"] = { tab = "الحركة والأدمن", prio = 3 },
+	},
+	["سيرفر خاص"] = {
+		["دوّر سيرفر خاص"] = { tab = "السيرفر والتنقل", prio = 1 },
+	},
+	["أشياء ثانية"] = {
+		["تغيير السيرفر"] = { tab = "السيرفر والتنقل", prio = 2 }, ["التنقل"] = { tab = "السيرفر والتنقل", prio = 3 },
+		["الأداء"] = { tab = "الأدوات والحماية", prio = 1 }, ["الحارس"] = { tab = "الأدوات والحماية", prio = 2 },
+		["المانع"] = { tab = "الأدوات والحماية", prio = 3 }, ["اللاعب"] = { tab = "الأدوات والحماية", prio = 4 },
+		["تشغيل مرة وحدة"] = { tab = "الأدوات والحماية", prio = 5 }, ["الجلسة"] = { tab = "الأدوات والحماية", prio = 6 },
+		["النوافذ"] = "HIDE",
+	},
+	["المظهر"] = {
+		["اصطد سمكة"] = { tab = "المظهر", prio = 1 }, ["سرقة بيضة"] = { tab = "المظهر", prio = 2 },
+	},
+	["الدردشة المباشرة"] = { ["الدردشة العامة"] = "HIDE" },
+	["الدعم"] = { ["ادعم محمد TN"] = "HIDE" },
+}
+
+local ProxyTab = {}
+ProxyTab.__index = ProxyTab
+function ProxyTab:AddSection(secName, flat)
+	local win = self.Window
+	local r = self._routes[secName]
+	if r == "HIDE" then
+		return win:_hiddenTab():AddSection(secName, flat, 1, self._orig)
+	end
+	if r then
+		local dest = win:_realTab({ Name = r.tab })
+		return dest:AddSection(r.name or secName, flat, r.prio, self._orig, secName)
+	end
+	return win:_realTab({ Name = self._orig, Icon = self._o.Icon }):AddSection(secName, flat)
+end
+for _, m in ipairs(TAB_METHODS) do
+	ProxyTab[m] = function(self, ...)
+		local own = self.Window:_realTab({ Name = self._orig, Icon = self._o.Icon })
+		return own[m](own, ...)
+	end
+end
+function ProxyTab:AddFrame(...)
+	local own = self.Window:_realTab({ Name = self._orig, Icon = self._o.Icon })
+	return own:AddFrame(...)
+end
+function ProxyTab:AddSwitcher(...)
+	local own = self.Window:_realTab({ Name = self._orig, Icon = self._o.Icon })
+	return own:AddSwitcher(...)
+end
+
+
 
 -- ---------------------------------------------------------------
 -- النافذة
@@ -1450,9 +1607,56 @@ function Lib:Window(opts)
 		end
 	end
 
+	win._tabByName = {}
+	function win:_hiddenTab()
+		if not self._hidden then
+			self._hidden = setmetatable({
+				Name = "__hidden", Window = win, _secCount = 0, _free = 0,
+				Page = create("ScrollingFrame", { Visible = false, Size = UDim2.new(1, 0, 1, 0) }),
+			}, Tab)
+		end
+		return self._hidden
+	end
+	function win:SelectTab(name)
+		local t = self._tabByName[tostring(name)]
+		if t then
+			self._userPicked = true
+			selectTab(t, true)
+		end
+	end
+	function win:_autoSelect()
+		if self._userPicked then
+			return
+		end
+		local best
+		for _, t in ipairs(self.Tabs) do
+			if not t.Internal and (not best or t.OrderKey < best.OrderKey) then
+				best = t
+			end
+		end
+		if best and best ~= self._current then
+			task.defer(function()
+				if not self._userPicked then
+					selectTab(best, false)
+				end
+			end)
+		end
+	end
 	function win:AddTab(o)
 		o = o or {}
 		local name = tostring(o.Name or "تبويب")
+		local routes = (not o.Internal) and ROUTES[name] or nil
+		if routes then
+			return setmetatable({ _routes = routes, _orig = name, _o = o, Window = win }, ProxyTab)
+		end
+		return self:_realTab(o)
+	end
+	function win:_realTab(o)
+		o = o or {}
+		local name = tostring(o.Name or "تبويب")
+		if self._tabByName[name] then
+			return self._tabByName[name]
+		end
 		local index = #self.Tabs + 1
 		local internal = o.Internal == true
 		if not internal then
@@ -1468,7 +1672,7 @@ function Lib:Window(opts)
 		accentize(frame, "ScrollBarImageColor3", "Accent")
 		local btn = create("TextButton", {
 			Size = UDim2.new(1, 0, 0, 36), BackgroundColor3 = THEME.SurfaceLight, BackgroundTransparency = 1,
-			AutoButtonColor = false, Text = "", LayoutOrder = o.Order or index, ZIndex = 2, Parent = navHolder,
+			AutoButtonColor = false, Text = "", LayoutOrder = o.Order or TAB_ORDER[name] or (500 + index), ZIndex = 2, Parent = navHolder,
 		}, { corner(10) })
 		local icon = label(btn, {
 			AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -10, 0.5, 0), Size = UDim2.new(0, 0, 0, 22),
@@ -1478,7 +1682,8 @@ function Lib:Window(opts)
 			AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -16, 0.5, 0), Size = UDim2.new(1, -24, 1, 0),
 			Text = name, TextColor3 = THEME.SubText, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Right, ZIndex = 2,
 		})
-		local tab = setmetatable({ Name = name, Page = frame, Button = btn, Label = text, Icon = icon, _order = 0, Window = win }, Tab)
+		local tab = setmetatable({ Name = name, Page = frame, Button = btn, Label = text, Icon = icon, _order = 0, Window = win,
+			Internal = internal, OrderKey = o.Order or TAB_ORDER[name] or (500 + index) }, Tab)
 		btn.MouseEnter:Connect(function()
 			if win._current ~= tab then
 				tween(btn, 0.15, { BackgroundTransparency = 0.6 })
@@ -1494,18 +1699,13 @@ function Lib:Window(opts)
 			end
 		end)
 		btn.MouseButton1Click:Connect(function()
+			win._userPicked = true
 			selectTab(tab, true)
 		end)
 		table.insert(self.Tabs, tab)
-		if not internal and self._userTabs == 1 then
-			task.defer(function()
-				selectTab(tab, false)
-			end)
-			win._current = tab
-			frame.Visible = true
-			pageTitle.Text = name
-			text.TextColor3 = THEME.Text
-			icon.TextTransparency = 0
+		self._tabByName[name] = tab
+		if not internal then
+			self:_autoSelect()
 		end
 		return tab
 	end
@@ -1518,12 +1718,12 @@ function Lib:Window(opts)
 		end
 		local q = searchBox.Text:lower()
 		for _, child in ipairs(tab.Page:GetChildren()) do
-			if child:IsA("GuiObject") then
+			if child:IsA("GuiObject") and (child:GetAttribute("Section") or child:GetAttribute("Search") ~= nil) then
 				if q == "" then
 					child.Visible = true
 				elseif child:GetAttribute("Section") then
 					child.Visible = false
-				elseif child:GetAttribute("Search") ~= nil then
+				else
 					child.Visible = string.find(string.lower(child:GetAttribute("Search")), q, 1, true) ~= nil
 				end
 			end
@@ -25311,25 +25511,29 @@ do
 		local Assets = require(ReplicatedStorage.Data.Assets)
 		local EggState2 = require(ReplicatedStorage.Client.EggState)
 		local Save = require(ReplicatedStorage.Shared.Save)
+		local __libTheme = genv.SenaLibOverride and genv.SenaLibOverride.Theme or {}
+		local function __th(key, r, g, b)
+			return __libTheme[key] or Color3.fromRGB(r, g, b)
+		end
 		local t166 = {
-			strokeCol = Color3.fromRGB(88, 70, 34),
-			accent = Color3.fromRGB(255, 176, 32),
-			accentA = Color3.fromRGB(255, 140, 0),
-			accentB = Color3.fromRGB(255, 214, 102),
-			surface = Color3.fromRGB(26, 23, 17),
-			surfaceHi = Color3.fromRGB(36, 32, 23),
-			text = Color3.fromRGB(250, 243, 228),
-			btnText = Color3.fromRGB(222, 208, 176),
-			muted = Color3.fromRGB(170, 156, 128),
+			strokeCol = __th("Stroke", 54, 54, 86),
+			accent = __th("Accent", 124, 92, 255),
+			accentA = __th("Accent", 124, 92, 255),
+			accentB = __th("Accent2", 0, 190, 255),
+			surface = __th("Surface", 22, 22, 35),
+			surfaceHi = __th("SurfaceLight", 34, 34, 54),
+			text = __th("Text", 242, 242, 252),
+			btnText = Color3.fromRGB(205, 205, 228),
+			muted = __th("SubText", 146, 146, 176),
 			shadow = Color3.fromRGB(0, 0, 0),
-			obsTop = Color3.fromRGB(30, 26, 18),
-			obsMid = Color3.fromRGB(19, 16, 11),
-			obsLow = Color3.fromRGB(12, 10, 7),
-			btnBg = Color3.fromRGB(44, 38, 26),
-			btnHover = Color3.fromRGB(66, 57, 38),
-			inputBg = Color3.fromRGB(16, 14, 10),
-			switchOff = Color3.fromRGB(62, 54, 38),
-			good = Color3.fromRGB(120, 220, 110)
+			obsTop = __th("Surface", 22, 22, 35),
+			obsMid = __th("Background", 11, 11, 18),
+			obsLow = __th("Background", 11, 11, 18),
+			btnBg = __th("SurfaceLight", 34, 34, 54),
+			btnHover = Color3.fromRGB(52, 52, 80),
+			inputBg = Color3.fromRGB(14, 14, 22),
+			switchOff = Color3.fromRGB(46, 46, 72),
+			good = __th("Success", 46, 204, 113)
 		}
 		local v3697 = t166
 
@@ -27425,124 +27629,39 @@ do
 			Frame5.BackgroundTransparency = 1
 			Frame5.Parent = Frame
 
-			local function v4900(p4900, p4901, p4902)
-				local button = Instance.new("TextButton")
+			local stopButton = Instance.new("TextButton")
 
-				button.AnchorPoint = Vector2.new(p4902 and 1 or 0, 0)
-				button.Position = UDim2.fromScale(p4902 and 1 or 0, 0)
-				button.Size = UDim2.new(0.5, -4, 1, 0)
-				button.BackgroundColor3 = p4901
-				button.BackgroundTransparency = 0.12
-				button.AutoButtonColor = false
-				button.Font = Enum.Font.GothamBold
-				button.TextSize = 13
-				button.TextColor3 = Color3.fromRGB(255, 255, 255)
-				button.Text = p4900
-				button.Parent = Frame5
-				Instance.new("UICorner", button).CornerRadius = UDim.new(0, 6)
-
-				return button
-			end
-			local function v4901(p4903, p4904, p4905)
-				p4903.Text = p4904
-				task.delay(1.5, function()
-					if p4903 and p4903.Parent then
-						p4903.Text = p4905
-					end
-				end)
-			end
-
-			local gotoButton = v4900("روح للبيضة", Color3.fromRGB(50, 140, 90), true)
-			local stopButton = v4900("إيقاف السرقة", Color3.fromRGB(190, 60, 60), false)
-
-			gotoButton.MouseButton1Click:Connect(function()
-				v3698()
-
-				local runtime = genv.__SenaV4EggRuntime
-
-				if not runtime or type(runtime.queueManual) ~= "function" then
-					v4901(gotoButton, "النظام مب جاهز", "روح للبيضة")
-
-					return
-				end
-
-				if senaV4Config.AutoSteal then
-					v4901(gotoButton, "طفّ السرقة الأوتو أول", "روح للبيضة")
-
-					return
-				end
-
-				local Character = game:GetService("Players").LocalPlayer.Character
-				local HumanoidRootPart = Character and Character:FindFirstChild("HumanoidRootPart")
-				local bestUid, bestDistance
-
-				for uid in pairs(t175.picked) do
-					local record
-
-					pcall(function()
-						record = EggState2.ReadFieldEgg(uid)
-					end)
-
-					local position = record and (record.BottomCFrame and record.BottomCFrame.Position or record.BoundsCFrame and record.BoundsCFrame.Position)
-					local distance = position and HumanoidRootPart and (position - HumanoidRootPart.Position).Magnitude or 0
-
-					if position and (not bestDistance or distance < bestDistance) then
-						bestUid, bestDistance = uid, distance
-					end
-				end
-
-				if not bestUid then
-					v4901(gotoButton, "اختار بيضة أول", "روح للبيضة")
-
-					return
-				end
-
-				-- نفس طريق "اسرق المحدد": المحرك يروح للبيضة بنفس وضع السرقة، وأول ما يوصل ويبي يشيلها نوقفه بدل ما يسرق
-				runtime._goOnlyUid = bestUid
-				runtime._requestCarry = function()
-					runtime._requestCarry = nil
-					runtime._goOnlyUid = nil
-					task.defer(function()
-						pcall(function()
-							runtime:clearManual()
-						end)
-						pcall(t175.refresh)
-					end)
-					v4901(gotoButton, "وصلت للبيضة", "روح للبيضة")
-				end
-				runtime:queueManual({ bestUid })
-				gotoButton.Text = "جاي للبيضة..."
-
-				task.delay(45, function()
-					if runtime._goOnlyUid == bestUid then
-						runtime._requestCarry = nil
-						runtime._goOnlyUid = nil
-						pcall(function()
-							runtime:clearManual()
-						end)
-						if gotoButton and gotoButton.Parent then
-							gotoButton.Text = "روح للبيضة"
-						end
-					end
-				end)
-			end)
+			stopButton.Size = UDim2.new(1, 0, 1, 0)
+			stopButton.BackgroundColor3 = Color3.fromRGB(190, 60, 60)
+			stopButton.BackgroundTransparency = 0.12
+			stopButton.AutoButtonColor = false
+			stopButton.Font = Enum.Font.GothamBold
+			stopButton.TextSize = 13
+			stopButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+			stopButton.Text = "إيقاف السرقة"
+			stopButton.Parent = Frame5
+			Instance.new("UICorner", stopButton).CornerRadius = UDim.new(0, 6)
 			stopButton.MouseButton1Click:Connect(function()
 				v3698()
 
 				local runtime = genv.__SenaV4EggRuntime
+				local message = "النظام مب جاهز"
 
 				if runtime and type(runtime.clearManual) == "function" then
-					runtime._requestCarry = nil
-					runtime._goOnlyUid = nil
 					pcall(function()
 						runtime:clearManual()
 					end)
 					t175.picked = {}
-					v4901(stopButton, "تم الإيقاف", "إيقاف السرقة")
+					message = "تم الإيقاف"
 					pcall(t175.refresh)
-				else
-					v4901(stopButton, "النظام مب جاهز", "إيقاف السرقة")
 				end
+
+				stopButton.Text = message
+				task.delay(1.5, function()
+					if stopButton and stopButton.Parent then
+						stopButton.Text = "إيقاف السرقة"
+					end
+				end)
 			end)
 			t175.paintChips()
 			t175.refresh()
@@ -29162,11 +29281,11 @@ do
 			Frame2.BorderSizePixel = 0
 			Frame2.ZIndex = 1
 			Frame2.Parent = Frame
-			Instance.new("UICorner", Frame2).CornerRadius = UDim.new(0, 3)
+			Instance.new("UICorner", Frame2).CornerRadius = UDim.new(0, 8)
 
 			local UIGradient = Instance.new("UIGradient", Frame2)
 
-			UIGradient.Rotation = 90
+			UIGradient.Rotation = 16
 			UIGradient.Color = ColorSequence.new({
 				ColorSequenceKeypoint.new(0, t166.obsTop),
 				ColorSequenceKeypoint.new(0.52, t166.obsMid),
@@ -29175,40 +29294,19 @@ do
 
 			local UIStroke = Instance.new("UIStroke", Frame2)
 
-			UIStroke.Color = t166.accent
+			UIStroke.Color = t166.strokeCol
 			UIStroke.Thickness = 1
-			UIStroke.Transparency = 0.55
-
-			local topBar = Instance.new("Frame")
-
-			topBar.Size = UDim2.new(1, 0, 0, 4)
-			topBar.BorderSizePixel = 0
-			topBar.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-			topBar.ZIndex = 2
-			topBar.Parent = Frame2
-			Instance.new("UIGradient", topBar).Color = ColorSequence.new(t166.accentA, t166.accentB)
-
-			local sideBar = Instance.new("Frame")
-
-			sideBar.AnchorPoint = Vector2.new(1, 0)
-			sideBar.Position = UDim2.new(1, 0, 0, 4)
-			sideBar.Size = UDim2.new(0, 3, 1, -4)
-			sideBar.BorderSizePixel = 0
-			sideBar.BackgroundColor3 = t166.accent
-			sideBar.BackgroundTransparency = 0.35
-			sideBar.ZIndex = 2
-			sideBar.Parent = Frame2
+			UIStroke.Transparency = 0.72
 
 			local TextLabel5 = Instance.new("TextLabel")
 
 			TextLabel5.BackgroundTransparency = 1
-			TextLabel5.AnchorPoint = Vector2.new(1, 0)
-			TextLabel5.Position = UDim2.new(1, -16, 0, 14)
+			TextLabel5.Position = UDim2.fromOffset(42, 12)
 			TextLabel5.Size = UDim2.fromOffset(200, 22)
 			TextLabel5.Font = Enum.Font.GothamBold
 			TextLabel5.TextSize = 16
-			TextLabel5.TextXAlignment = Enum.TextXAlignment.Right
-			TextLabel5.TextColor3 = t166.accent
+			TextLabel5.TextXAlignment = Enum.TextXAlignment.Left
+			TextLabel5.TextColor3 = t166.text
 			TextLabel5.Text = "محمد TN"
 			TextLabel5.Parent = Frame2
 
@@ -29224,14 +29322,13 @@ do
 
 			local Frame3 = Instance.new("Frame")
 
-			Frame3.AnchorPoint = Vector2.new(1, 0)
-			Frame3.Position = UDim2.new(1, -16, 0, 44)
+			Frame3.Position = UDim2.fromOffset(14, 44)
 			Frame3.Size = UDim2.fromOffset(math.max(90, #v4242.name * 8 + 26), 24)
 			Frame3.BackgroundColor3 = t166.accent
 			Frame3.BackgroundTransparency = 0.82
 			Frame3.BorderSizePixel = 0
 			Frame3.Parent = Frame2
-			Instance.new("UICorner", Frame3).CornerRadius = UDim.new(0, 2)
+			Instance.new("UICorner", Frame3).CornerRadius = UDim.new(0, 6)
 
 			local UIStroke2 = Instance.new("UIStroke", Frame3)
 
@@ -29296,7 +29393,7 @@ do
 
 			local TextButton2 = Instance.new("TextButton")
 
-			TextButton2.Position = UDim2.fromOffset(10, 12)
+			TextButton2.Position = UDim2.new(1, -36, 0, 8)
 			TextButton2.Size = UDim2.fromOffset(26, 26)
 			TextButton2.BackgroundColor3 = t166.btnBg
 			TextButton2.BackgroundTransparency = 0.15
@@ -29307,7 +29404,7 @@ do
 			TextButton2.Text = "X"
 			TextButton2.ZIndex = 5
 			TextButton2.Parent = Frame2
-			Instance.new("UICorner", TextButton2).CornerRadius = UDim.new(0, 2)
+			Instance.new("UICorner", TextButton2).CornerRadius = UDim.new(0, 4)
 
 			local UIStroke4 = Instance.new("UIStroke", TextButton2)
 
@@ -29472,6 +29569,44 @@ do
 		end
 		senaPanels.closeAll = function()
 			v4307()
+		end
+		senaPanels.embed = function(name, container)
+			v3698()
+
+			local def = t195[name]
+
+			if not def then
+				return false
+			end
+
+			local proxy = setmetatable({}, {
+				__index = function(_, key)
+					if key == "Parent" then
+						return container.Parent
+					end
+
+					if key == "Enabled" then
+						return container.Visible and container.AbsoluteSize.X > 0
+					end
+
+					return nil
+				end,
+				__newindex = function() end
+			})
+
+			windows[name] = {
+				gui = proxy,
+				page = container,
+				holder = container
+			}
+			pcall(function()
+				def.build(container)
+			end)
+			pcall(function()
+				v3771(name)
+			end)
+
+			return true
 		end
 		pcall(function()
 			getgenv().SenaPanels = senaPanels
@@ -31787,28 +31922,6 @@ do
 				Default = false,
 				Callback = v4732(v4526)
 			})
-			t216.helpFriend = v4794:AddToggle({
-				Title = "ساعد صاحبك",
-				Content = "بدل ما يودّع البيضة المسروقة، يخليها قبل خط المنطقة الآمنة عشان صاحبك ياخذها.",
-				Default = false,
-				Callback = v4732(function(p1069)
-					senaV4Config.HelpFriend = p1069 == true
-				end)
-			})
-			v4794:AddButton({
-				Title = "فاحص البيض",
-				Content = "كل بيضة في الميدان الحين، الأغلى أول. اختار وحدة واسرقها.",
-				Callback = v4732(function()
-					senaPanels.openChecker()
-				end)
-			})
-			v4794:AddButton({
-				Title = "محلل ظهور البيض",
-				Content = "تتبّع مباشر لظهور البيض مع جدول زمني وتوقعات متزامنة مع اللاعبين المتصلين.",
-				Callback = v4732(function()
-					senaPanels.openAnalyst()
-				end)
-			})
 			local __beginnerSteal = { saved = nil }
 
 			t216.beginnerSteal = v4794:AddToggle({
@@ -31871,6 +31984,36 @@ do
 							pcall(function() t216.antiGuardKnockback:Set(saved.knock) end)
 							pcall(function() t216.antiHitGuard:Set(saved.hit) end)
 						end
+					end
+				end)
+			})
+			t216.helpFriend = v4794:AddToggle({
+				Title = "ساعد صاحبك",
+				Content = "بدل ما يودّع البيضة المسروقة، يخليها قبل خط المنطقة الآمنة عشان صاحبك ياخذها.",
+				Default = false,
+				Callback = v4732(function(p1069)
+					senaV4Config.HelpFriend = p1069 == true
+				end)
+			})
+			v4794:AddButton({
+				Title = "فاحص البيض",
+				Content = "كل بيضة في الميدان الحين، الأغلى أول. اختار وحدة واسرقها.",
+				ButtonText = "افتح",
+				Callback = v4732(function()
+					v4742:SelectTab("كشف البيض")
+					if senaPanels.showPanel then
+						senaPanels.showPanel("checker")
+					end
+				end)
+			})
+			v4794:AddButton({
+				Title = "محلل ظهور البيض",
+				Content = "تتبّع مباشر لظهور البيض مع جدول زمني وتوقعات متزامنة مع اللاعبين المتصلين.",
+				ButtonText = "افتح",
+				Callback = v4732(function()
+					v4742:SelectTab("كشف البيض")
+					if senaPanels.showPanel then
+						senaPanels.showPanel("eggdata")
 					end
 				end)
 			})
@@ -32813,15 +32956,23 @@ Missing: %s]], __SenaV4ScrambleTradeIn.banner, __SenaV4ScrambleTradeIn.status, m
 			Windows:AddButton({
 				Title = "فاحص البيض",
 				Content = "اختار البيض من الميدان بيدك وبعدين ارسله كله لطابور السرقة.",
+				ButtonText = "افتح",
 				Callback = v4732(function()
-					senaPanels.openChecker()
+					v4742:SelectTab("كشف البيض")
+					if senaPanels.showPanel then
+						senaPanels.showPanel("checker")
+					end
 				end)
 			})
 			Windows:AddButton({
 				Title = "بيانات وسجل البيض",
 				Content = "قيم جدول الظهور لكل منطقة، وشنو اللي طلع فعلاً في هالجلسة.",
+				ButtonText = "افتح",
 				Callback = v4732(function()
-					senaPanels.openAnalyst()
+					v4742:SelectTab("كشف البيض")
+					if senaPanels.showPanel then
+						senaPanels.showPanel("eggdata")
+					end
 				end)
 			})
 			Windows:AddButton({
@@ -33176,6 +33327,51 @@ Missing: %s]], __SenaV4ScrambleTradeIn.banner, __SenaV4ScrambleTradeIn.status, m
 						task.wait(1)
 					end
 				end)
+			end
+		end
+
+		do
+			local eggTab = v4742:AddTab({
+				Name = "كشف البيض",
+				Icon = "eye"
+			})
+
+			if senaPanels and senaPanels.embed and eggTab.AddFrame and eggTab.AddSwitcher then
+				local defs = {
+					{ key = "checker", label = "فاحص البيض", height = 380 },
+					{ key = "eggdata", label = "محلل الظهور", height = 450 },
+					{ key = "logs", label = "سجل البيض", height = 380 },
+					{ key = "eggs", label = "لوحة البيض", height = 380 },
+					{ key = "inventory", label = "المخزون", height = 390 }
+				}
+				local labels = {}
+				local frames = {}
+
+				for i, def in ipairs(defs) do
+					labels[i] = def.label
+				end
+
+				local switcher = eggTab:AddSwitcher(labels, function(index)
+					for i, frame in ipairs(frames) do
+						frame.Visible = i == index
+					end
+				end)
+
+				for i, def in ipairs(defs) do
+					local frame = eggTab:AddFrame(def.height)
+
+					frame.Visible = i == 1
+					frames[i] = frame
+					pcall(senaPanels.embed, def.key, frame)
+				end
+
+				senaPanels.showPanel = function(key)
+					for i, def in ipairs(defs) do
+						if def.key == key then
+							switcher.Select(i)
+						end
+					end
+				end
 			end
 		end
 

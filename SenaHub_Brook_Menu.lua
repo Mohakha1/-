@@ -1179,7 +1179,7 @@ end
 -- إعادة ترتيب وتسمية: كل (تبويب أصلي / قسم) يروح لتبويب جديد
 -- ---------------------------------------------------------------
 local TAB_ORDER = {
-	["السرقة"] = 1, ["كشف البيض"] = 2, ["الأتمتة"] = 3, ["الحيوانات"] = 4, ["الأحداث"] = 5, ["اللاعبين"] = 6,
+	["السرقة"] = 1, ["كشف البيض"] = 2, ["الشات"] = 2.5, ["الأتمتة"] = 3, ["الحيوانات"] = 4, ["الأحداث"] = 5, ["اللاعبين"] = 6,
 	["الحركة والأدمن"] = 7, ["السيرفر والتنقل"] = 8, ["الأدوات والحماية"] = 9, ["المظهر"] = 10, ["الإعدادات"] = 9999,
 }
 local ROUTES = {
@@ -1438,11 +1438,15 @@ function Lib:Window(opts)
 	accentGradient(0).Parent = logoTitle
 	do
 		local pill = create("Frame", {
-			AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -66, 0, 39), Size = UDim2.new(0, 88, 0, 18),
+			AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -66, 0, 39), Size = UDim2.new(1, -78, 0, 20),
 			BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.82, BorderSizePixel = 0, Parent = sidebar,
-		}, { corner(9) })
+		}, { corner(10) })
 		accentGradient(0).Parent = pill
-		label(pill, { Size = UDim2.new(1, 0, 1, 0), Text = "الهَب  •  v" .. tostring(opts.Version or 1), TextSize = 10 })
+		label(pill, {
+			Size = UDim2.new(1, -8, 1, 0), Position = UDim2.new(0, 4, 0, 0), TextScaled = true,
+			Text = "منوّر بسكربت TN  •  النسخة V" .. tostring(opts.Version or 1), TextSize = 10,
+		}).Parent = pill
+		create("UITextSizeConstraint", { MaxTextSize = 11, MinTextSize = 6, Parent = pill:FindFirstChildOfClass("TextLabel") })
 	end
 
 	local NAV_TOP = 168
@@ -1886,14 +1890,25 @@ function Lib:Window(opts)
 	end
 
 	-- الزر العائم
+	local FLOAT_DEFAULT = UDim2.new(0, 52, 0.5, 0)
+	local floatPos = Config.get("__float_pos")
+	local floatSize = tonumber(Config.get("__float_size")) or 54
 	local floatingBtn = create("TextButton", {
-		AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0, 52, 0.5, 0), Size = UDim2.new(0, 54, 0, 54),
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = (type(floatPos) == "table" and tonumber(floatPos.x) and tonumber(floatPos.y)) and UDim2.fromOffset(floatPos.x, floatPos.y) or FLOAT_DEFAULT,
+		Size = UDim2.new(0, floatSize, 0, floatSize),
 		BackgroundColor3 = Color3.new(1, 1, 1), AutoButtonColor = false, Text = "M", TextSize = 24, Font = FONT_BOLD,
 		TextColor3 = Color3.fromRGB(14, 14, 24), Visible = true, ZIndex = 40, Parent = screenGui,
-	}, { corner(27), accentGradient(45), stroke(THEME.Background, 2) })
+	}, { create("UICorner", { CornerRadius = UDim.new(1, 0) }), accentGradient(45), stroke(THEME.Background, 2) })
 	local floatImage = create("ImageLabel", {
 		Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Image = "", ScaleType = Enum.ScaleType.Crop, ZIndex = 41, Visible = false, Parent = floatingBtn,
-	}, { corner(27) })
+	}, { create("UICorner", { CornerRadius = UDim.new(1, 0) }) })
+	local function applyFloatSize(v)
+		floatSize = math.clamp(tonumber(v) or 54, 32, 120)
+		floatingBtn.Size = UDim2.new(0, floatSize, 0, floatSize)
+		floatingBtn.TextSize = math.floor(floatSize * 0.45)
+	end
+	applyFloatSize(floatSize)
 	task.spawn(function()
 		local asset = loadImage("float_v1.jpg", IMG_FLOAT)
 		if asset then
@@ -1946,6 +1961,19 @@ function Lib:Window(opts)
 			end
 			if floatPressed and not floatMoved then
 				setVisible(not guiVisible)
+			end
+			if floatPressed and floatMoved then
+				-- نثبّت المكان داخل الشاشة ونحفظه
+				pcall(function()
+					local camera = Workspace.CurrentCamera
+					local vp = camera and camera.ViewportSize or Vector2.new(1280, 720)
+					local c = floatingBtn.AbsolutePosition + floatingBtn.AbsoluteSize / 2
+					local half = floatSize / 2
+					local x = math.clamp(c.X, half, math.max(vp.X - half, half))
+					local y = math.clamp(c.Y, half, math.max(vp.Y - half, half))
+					floatingBtn.Position = UDim2.fromOffset(x, y)
+					Config.set("__float_pos", { x = x, y = y })
+				end)
 			end
 			floatPressed = false
 		end
@@ -2184,6 +2212,21 @@ function Lib:Window(opts)
 			win._floatWanted = v
 			floatingBtn.Visible = v and not shotOn
 		end, "__float_v2")
+		local sizeFloat = uiSec:AddSlider({
+			Title = "حجم الزر العائم", Content = "كبّره أو صغّره، وتقدر تسحبه وتحطه في أي مكان", Min = 36, Max = 110, Increment = 2, Default = 54,
+			Callback = function(v)
+				applyFloatSize(v)
+				Config.set("__float_size", v)
+			end,
+		})
+		applyFloatSize(sizeFloat.Value)
+		uiSec:AddButton({
+			Title = "رجّع مكان الزر العائم", Content = "يرجّع الزر لمكانه الأصلي على يسار الشاشة", ButtonText = "رجّع",
+			Callback = function()
+				floatingBtn.Position = FLOAT_DEFAULT
+				Config.set("__float_pos", false)
+			end,
+		})
 
 		-- عن السكربت
 		local aboutSec = st:AddSection("عن السكربت")
@@ -2260,7 +2303,7 @@ function Lib:Window(opts)
 		-- ترحيب
 		local hello = home:AddSection("أهلاً وسهلاً", false, 1)
 		do
-			local c = homeCard(hello, 112)
+			local c = homeCard(hello, 132)
 			create("Frame", {
 				Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.82, BorderSizePixel = 0, Parent = c,
 			}, { corner(12), accentGradient(20) })
@@ -2269,13 +2312,13 @@ function Lib:Window(opts)
 				Text = "أهلاً " .. player.DisplayName, TextSize = 20, TextXAlignment = Enum.TextXAlignment.Right, TextTruncate = Enum.TextTruncate.AtEnd,
 			})
 			label(c, {
-				AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -18, 0, 48), Size = UDim2.new(1, -36, 0, 34),
-				Text = "سكربت " .. tostring(opts.Footer or "سرقة بيضة") .. " بالعربي: سرقة أوتو، فلاتر، أتمتة، كشف البيض، ومحلل ظهور وأكثر",
+				AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -18, 0, 48), Size = UDim2.new(1, -36, 0, 52),
+				Text = "السلام عليكم ورحمة الله، منوّر سكربت TN. لا تنسى الاشتراك واللايك وتنضم لسيرفر الديسكورد، ودعمك يساعدنا نقدّم لك الأفضل بشكل مجاني.",
 				TextColor3 = THEME.SubText, TextSize = 12, Font = FONT_REG, TextWrapped = true,
 				TextXAlignment = Enum.TextXAlignment.Right, TextYAlignment = Enum.TextYAlignment.Top,
 			})
 			local credit = label(c, {
-				AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -18, 0, 86), Size = UDim2.new(1, -36, 0, 18),
+				AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -18, 0, 106), Size = UDim2.new(1, -36, 0, 18),
 				Text = "صنع من قبل " .. INFO.Author, TextColor3 = Color3.new(1, 1, 1), TextSize = 13, TextXAlignment = Enum.TextXAlignment.Right,
 			})
 			accentGradient(0).Parent = credit
@@ -2569,6 +2612,362 @@ function Lib:Window(opts)
 			dg.Parent = devName
 			table.insert(heroGradients, dg)
 			line(c, 60, "@" .. INFO.DevUser, 12, THEME.SubText, FONT_REG, 16)
+		end
+	end
+
+	-- ----------------------------------------------------------
+	-- الشات: السيرفر + عالمي، مع زر "اسمح بالانضمام لسيرفري"
+	-- ----------------------------------------------------------
+	do
+		local CHAT_URL = "https://eggg-8074e-default-rtdb.firebaseio.com"
+		local chatTab = win:_realTab({ Name = "الشات", Order = 2.5 })
+		local requestFn = (typeof(request) == "function" and request) or (typeof(http_request) == "function" and http_request)
+			or (typeof(syn) == "table" and syn.request) or (typeof(fluxus) == "table" and fluxus.request) or nil
+		local serverId = (game.JobId ~= "" and game.JobId) or "studio"
+		local MAX_LEN, COOLDOWN = 200, 1.5
+		local JSON_HEADERS = { ["Content-Type"] = "application/json" }
+
+		local joinSec = chatTab:AddSection("الانضمام لسيرفرك", false, 1)
+		local chatSec = chatTab:AddSection("المحادثة", false, 2)
+
+		local function req(options)
+			if not requestFn then
+				return nil
+			end
+			local ok, response = pcall(requestFn, options)
+			if ok and response and response.Success then
+				return response
+			end
+			return nil
+		end
+		local function decode(body)
+			local ok, data = pcall(function()
+				return HttpService:JSONDecode(body)
+			end)
+			return ok and data or nil
+		end
+		local function clean(text)
+			return (tostring(text):gsub("%c", " "):match("^%s*(.-)%s*$"))
+		end
+		local function clip(text, limit)
+			text = tostring(text)
+			local length = utf8.len(text)
+			if not length or length <= limit then
+				return text
+			end
+			return text:sub(1, utf8.offset(text, limit + 1) - 1)
+		end
+
+		local mapNameCache
+		local function mapName()
+			if mapNameCache then
+				return mapNameCache
+			end
+			local ok, info = pcall(function()
+				return game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId)
+			end)
+			mapNameCache = (ok and type(info) == "table" and info.Name) and tostring(info.Name) or tostring(game.Name)
+			return mapNameCache
+		end
+
+		if CHAT_URL == "" or not requestFn then
+			local c = makeCard(chatSec, 70, "")
+			textBlock(c, "الشات غير متاح", CHAT_URL == "" and "الشات غير مفعّل بهالنسخة" or "برنامج التشغيل عندك ما يدعم الشات (يحتاج request)", 0)
+		else
+			local feeds = {
+				Server = { url = CHAT_URL .. "/chats/server_" .. serverId .. ".json", title = "السيرفر" },
+				Global = { url = CHAT_URL .. "/chats/global.json", title = "عالمي" },
+			}
+			local order = { "Server", "Global" }
+			local joinOpen = false
+			local openKeys = {}
+			local current = "Server"
+			local lastSend, rowCount, lastToast = 0, 0, 0
+			local palette = {
+				Color3.fromRGB(60, 230, 160), Color3.fromRGB(190, 100, 255), Color3.fromRGB(255, 200, 40),
+				Color3.fromRGB(255, 110, 160), Color3.fromRGB(255, 150, 60), Color3.fromRGB(80, 210, 255), Color3.fromRGB(150, 230, 80),
+			}
+			local function nameColor(name)
+				local h = 0
+				for i = 1, #name do
+					h = (h * 31 + name:byte(i)) % 997
+				end
+				return palette[(h % #palette) + 1]
+			end
+
+			local card = makeCard(chatSec, 440, "")
+			card:SetAttribute("Search", nil)
+
+			-- تبويبات القنوات
+			local tabBtns = {}
+			for i, id in ipairs(order) do
+				local b = smallButton(card, feeds[id].title, false)
+				b.AnchorPoint = Vector2.new(1, 0)
+				b.Position = UDim2.new(1, -12 - (i - 1) * 96, 0, 10)
+				b.Size = UDim2.new(0, 88, 0, 28)
+				tabBtns[id] = b
+			end
+			local statusLbl = label(card, {
+				Position = UDim2.new(0, 12, 0, 10), Size = UDim2.new(1, -220, 0, 28), Text = "", TextSize = 11, TextColor3 = THEME.SubText,
+				Font = FONT_REG, TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Center, TextWrapped = false,
+			})
+
+			for _, id in ipairs(order) do
+				local list = create("ScrollingFrame", {
+					Position = UDim2.new(0, 10, 0, 46), Size = UDim2.new(1, -20, 1, -102), BackgroundColor3 = THEME.Background,
+					BackgroundTransparency = 0.3, BorderSizePixel = 0, ScrollBarThickness = 3, CanvasSize = UDim2.new(),
+					AutomaticCanvasSize = Enum.AutomaticSize.Y, ScrollingDirection = Enum.ScrollingDirection.Y, Visible = false, Parent = card,
+				}, {
+					corner(10),
+					create("UIListLayout", { Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder }),
+					create("UIPadding", { PaddingTop = UDim.new(0, 6), PaddingBottom = UDim.new(0, 6), PaddingLeft = UDim.new(0, 6), PaddingRight = UDim.new(0, 8) }),
+				})
+				accentize(list, "ScrollBarImageColor3", "Accent")
+				feeds[id].list, feeds[id].rows, feeds[id].seen, feeds[id].first = list, {}, {}, true
+			end
+
+			local function paintTabs()
+				for id, b in pairs(tabBtns) do
+					local on = id == current
+					b.BackgroundColor3 = on and THEME.Accent or THEME.SurfaceLight
+					b.TextColor3 = on and Color3.fromRGB(14, 14, 24) or THEME.SubText
+					feeds[id].list.Visible = on
+				end
+				statusLbl.Text = current == "Server" and "رسائل اللاعبين في سيرفرك" or "رسائل كل اللاعبين بكل السيرفرات"
+			end
+			table.insert(UI.Repaint, paintTabs)
+			for id, b in pairs(tabBtns) do
+				b.MouseButton1Click:Connect(function()
+					current = id
+					paintTabs()
+				end)
+			end
+
+			local function joinServer(info, sender)
+				local place, job = tonumber(info.Place), tostring(info.Job or "")
+				if place ~= game.PlaceId or job == "" then
+					return
+				end
+				Lib.Notify(nil, { Title = "جاري الانتقال", Content = "إلى سيرفر " .. tostring(sender), Duration = 3 })
+				local ok = pcall(function()
+					game:GetService("TeleportService"):TeleportToPlaceInstance(place, job, player)
+				end)
+				if not ok then
+					Lib.Notify(nil, { Title = "ما قدرت أنتقل", Content = "ممكن السيرفر انسكّر أو امتلأ", Duration = 3 })
+				end
+			end
+
+			local function addRow(feed, info, isHistory)
+				local sender = tostring(info.Sender)
+				local mine = sender == player.Name
+				local list = feed.list
+				local atBottom = list.CanvasPosition.Y >= list.AbsoluteCanvasSize.Y - list.AbsoluteSize.Y - 40
+				rowCount = rowCount + 1
+				local canJoin = (not mine) and info.Job and tostring(info.Job) ~= serverId and tonumber(info.Place) == game.PlaceId
+				local row = create("Frame", {
+					Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundColor3 = THEME.SurfaceLight,
+					BackgroundTransparency = mine and 0.55 or 0.3, LayoutOrder = rowCount, Parent = list,
+				}, {
+					corner(10),
+					create("UIPadding", { PaddingTop = UDim.new(0, 6), PaddingBottom = UDim.new(0, 6), PaddingLeft = UDim.new(0, 8), PaddingRight = UDim.new(0, 8) }),
+					create("UIListLayout", { Padding = UDim.new(0, 2), SortOrder = Enum.SortOrder.LayoutOrder, HorizontalAlignment = Enum.HorizontalAlignment.Right }),
+				})
+				local who = sender
+				if tostring(info.Display or "") ~= "" and info.Display ~= sender then
+					who = clip(info.Display, 16) .. "  @" .. sender
+				end
+				local head = create("Frame", { Size = UDim2.new(1, 0, 0, 20), BackgroundTransparency = 1, LayoutOrder = 1, Parent = row })
+				local gameTag = ""
+				if feed == feeds.Global and tostring(info.Game or "") ~= "" then
+					gameTag = "  •  " .. clip(info.Game, 20)
+				end
+				label(head, {
+					AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, 0, 0.5, 0), Size = UDim2.new(1, canJoin and -84 or 0, 1, 0),
+					Text = who .. "   " .. tostring(info.TimeString or "") .. gameTag, TextColor3 = mine and THEME.Accent or nameColor(sender),
+					TextSize = 12, TextXAlignment = Enum.TextXAlignment.Right, TextTruncate = Enum.TextTruncate.AtEnd, RichText = false,
+					AutomaticSize = Enum.AutomaticSize.None, TextWrapped = false,
+				})
+				if canJoin then
+					local join = smallButton(head, "انضم", true)
+					join.Position = UDim2.new(0, 0, 0.5, -11)
+					join.Size = UDim2.new(0, 76, 0, 22)
+					join.MouseButton1Click:Connect(function()
+						joinServer(info, sender)
+					end)
+				end
+				label(row, {
+					Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, Text = clip(clean(info.Message), 300), RichText = false,
+					TextSize = 14, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Right, LayoutOrder = 2,
+				})
+				table.insert(feed.rows, row)
+				if #feed.rows > 120 then
+					table.remove(feed.rows, 1):Destroy()
+				end
+				if atBottom or mine then
+					task.delay(0.1, function()
+						if list.Parent then
+							list.CanvasPosition = Vector2.new(0, 1e5)
+						end
+					end)
+				end
+				if not mine and not isHistory and not (win._current == chatTab and current == feed.id) and os.clock() - lastToast > 6 then
+					lastToast = os.clock()
+					Lib.Notify(nil, { Title = who, Content = clip(clean(info.Message), 50), Duration = 3 })
+				end
+			end
+			for id, feed in pairs(feeds) do
+				feed.id = id
+			end
+
+			local function handle(feed, info, isHistory)
+				if type(info) ~= "table" or type(info.Message) ~= "string" or type(info.Sender) ~= "string" then
+					return
+				end
+				addRow(feed, info, isHistory)
+			end
+			local function poll(feed)
+				local query
+				if feed.first then
+					query = '?orderBy=%22$key%22&limitToLast=15'
+				elseif feed.lastKey then
+					query = '?orderBy=%22$key%22&startAt=%22' .. feed.lastKey .. '%22'
+				else
+					query = '?orderBy=%22$key%22&limitToLast=30'
+				end
+				local response = req({ Url = feed.url .. query, Method = "GET" })
+				if not response then
+					return
+				end
+				local data = decode(response.Body)
+				local history = feed.first
+				feed.first = false
+				if type(data) ~= "table" then
+					return
+				end
+				local items = {}
+				for key, info in pairs(data) do
+					if not feed.seen[key] then
+						table.insert(items, { key = key, info = info })
+					end
+				end
+				table.sort(items, function(a, b)
+					return a.key < b.key
+				end)
+				for _, item in ipairs(items) do
+					feed.seen[item.key] = true
+					feed.lastKey = item.key
+					handle(feed, item.info, history)
+				end
+			end
+
+			local function payload(text, withJoin)
+				local data = {
+					Sender = player.Name, Display = player.DisplayName, UserId = player.UserId, Message = clip(text, MAX_LEN),
+					TimeString = os.date("%H:%M"), Game = mapName(),
+				}
+				if withJoin then
+					data.Place = game.PlaceId
+					data.Job = serverId
+				end
+				return data
+			end
+			local function post(feed, data)
+				local response = req({ Url = feed.url, Method = "POST", Headers = JSON_HEADERS, Body = HttpService:JSONEncode(data) })
+				local body = response and decode(response.Body)
+				local key = body and body.name
+				if key and not feed.seen[key] then
+					feed.seen[key] = true
+					feed.lastKey = key
+					handle(feed, data, true)
+				end
+				return key
+			end
+
+			-- إدخال الرسالة
+			local box = create("TextBox", {
+				AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -10, 1, -10), Size = UDim2.new(1, -112, 0, 38), BackgroundColor3 = THEME.SurfaceLight,
+				Text = "", PlaceholderText = "اكتب رسالتك...", PlaceholderColor3 = THEME.SubText, TextColor3 = THEME.Text, TextSize = 14,
+				Font = FONT_BOLD, TextXAlignment = Enum.TextXAlignment.Right, ClearTextOnFocus = false, Parent = card,
+			}, { corner(10), stroke(THEME.Stroke, 1, 0.4), create("UIPadding", { PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10) }) })
+			local sendBtn = smallButton(card, "أرسل", true)
+			sendBtn.AnchorPoint = Vector2.new(0, 1)
+			sendBtn.Position = UDim2.new(0, 10, 1, -10)
+			sendBtn.Size = UDim2.new(0, 92, 0, 38)
+			sendBtn.TextSize = 14
+			box:GetPropertyChangedSignal("Text"):Connect(function()
+				if (utf8.len(box.Text) or #box.Text) > MAX_LEN then
+					box.Text = clip(box.Text, MAX_LEN)
+				end
+			end)
+			local function send(text)
+				text = clean(text)
+				if text == "" then
+					return
+				end
+				if os.clock() - lastSend < COOLDOWN then
+					Lib.Notify(nil, { Title = "انتظر شوي", Content = "قبل الرسالة الجاية", Duration = 2 })
+					return
+				end
+				lastSend = os.clock()
+				box.Text = ""
+				local feed = feeds[current]
+				task.spawn(function()
+					local key = post(feed, payload(text, joinOpen))
+					if not key then
+						Lib.Notify(nil, { Title = "ما انرسلت الرسالة", Content = "حاول مرة ثانية", Duration = 3 })
+					elseif joinOpen then
+						table.insert(openKeys, { feed = feed, key = key })
+					end
+				end)
+			end
+			sendBtn.MouseButton1Click:Connect(function()
+				send(box.Text)
+			end)
+			box.FocusLost:Connect(function(enter)
+				if enter then
+					send(box.Text)
+				end
+			end)
+
+			-- زر الانضمام: يفتح/يسكّر سيرفرك للانضمام
+			local function closeJoin()
+				for _, entry in ipairs(openKeys) do
+					req({ Url = entry.feed.url:gsub("%.json$", "/" .. entry.key .. ".json"), Method = "PATCH", Headers = JSON_HEADERS, Body = '{"Job":null,"Place":null}' })
+				end
+				openKeys = {}
+			end
+			local joinToggle = joinSec:AddToggle({
+				Title = "اسمح للغير ينضمون لسيرفري",
+				Content = "لو شغّلته تنزل رسالة في الشات العالمي مع زر «انضم» يدخلهم سيرفرك. وتقدر تسكّره في أي وقت بإيقاف الزر.",
+				Default = false, NoSave = true,
+				Callback = function(on)
+					joinOpen = on == true
+					task.spawn(function()
+						if joinOpen then
+							local key = post(feeds.Global, payload("فتحت سيرفري، تعال انضم", true))
+							if key then
+								table.insert(openKeys, { feed = feeds.Global, key = key })
+								Lib.Notify(nil, { Title = "سيرفرك مفتوح", Content = "الباقين يقدرون ينضمون لك من الشات", Duration = 3 })
+							end
+						else
+							closeJoin()
+							post(feeds.Global, payload("سكّرت سيرفري", false))
+							Lib.Notify(nil, { Title = "سيرفرك مسكّر", Content = "ما أحد يقدر ينضم لك من الشات", Duration = 3 })
+						end
+					end)
+				end,
+			})
+			win._joinToggle = joinToggle
+
+			paintTabs()
+			task.spawn(function()
+				while screenGui.Parent do
+					for _, id in ipairs(order) do
+						pcall(poll, feeds[id])
+					end
+					task.wait(3)
+				end
+			end)
 		end
 	end
 

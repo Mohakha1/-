@@ -180,10 +180,131 @@ footer{border-top:1px solid var(--line);padding:38px clamp(24px,5vw,72px);displa
 footer .logo{color:var(--ice)}
 .progress-top{position:fixed;top:0;left:0;height:3px;background:linear-gradient(90deg,var(--green),var(--solar-br));
   z-index:200;width:0;box-shadow:0 0 14px rgba(246,183,60,.5)}
+
+/* grain overlay */
+.grain{position:fixed;inset:0;pointer-events:none;z-index:150;opacity:.035;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+
+.present-btn{border:none;cursor:pointer;font-family:inherit}
+/* floating present button */
+.float-present{position:fixed;right:24px;bottom:24px;z-index:120;display:inline-flex;align-items:center;gap:10px;
+  background:var(--green);color:var(--night);font-weight:800;font-size:13px;letter-spacing:.06em;
+  padding:14px 22px;border:none;border-radius:40px;cursor:pointer;box-shadow:0 14px 40px rgba(63,192,138,.4);
+  transition:.3s;font-family:inherit}
+.float-present:hover{background:var(--green-br);transform:translateY(-3px) scale(1.04)}
+.float-present .pulse{width:9px;height:9px;border-radius:50%;background:var(--night);position:relative}
+.float-present .pulse::after{content:'';position:absolute;inset:-5px;border-radius:50%;border:2px solid var(--night);
+  animation:pulse 1.8s infinite}
+@keyframes pulse{0%{transform:scale(.8);opacity:.8}100%{transform:scale(2);opacity:0}}
+@media(max-width:560px){.float-present{right:14px;bottom:14px;padding:12px 18px;font-size:12px}}
+
+/* ============ PRESENTATION DECK ============ */
+.deck{position:fixed;inset:0;z-index:1000;background:var(--night);display:none}
+.deck.open{display:block}
+.deck-stage{position:absolute;inset:0;overflow:hidden}
+.dslide{position:absolute;inset:0;display:flex;align-items:center;padding:clamp(40px,7vw,120px);
+  opacity:0;visibility:hidden;transform:scale(1.04);
+  transition:opacity .6s ease,transform .7s cubic-bezier(.2,.7,.2,1)}
+.dslide.on{opacity:1;visibility:visible;transform:none;z-index:2}
+.dslide.dark{background:radial-gradient(120% 120% at 80% 0%,var(--teal),var(--deep) 55%,var(--night))}
+.dslide.light{background:linear-gradient(180deg,#eef6f3,#dfeae6);color:var(--night)}
+.dwrap{max-width:1100px;width:100%}
+.center-col{flex-direction:column;justify-content:center;text-align:left;gap:10px}
+/* deck chrome */
+.deck-top{position:absolute;top:0;left:0;right:0;z-index:20;display:flex;justify-content:space-between;
+  align-items:center;padding:20px clamp(24px,5vw,56px);mix-blend-mode:difference;color:#fff}
+.deck-logo{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:.26em;font-size:13px}
+.deck-logo .d{width:9px;height:9px;border-radius:50%;background:var(--solar)}
+.deck-count{font-size:12px;letter-spacing:.2em;font-weight:700}
+.deck-exit{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.3);color:#fff;
+  padding:9px 16px;border-radius:30px;font-size:12px;letter-spacing:.1em;cursor:pointer;font-family:inherit;
+  mix-blend-mode:normal;transition:.25s}
+.deck-exit:hover{background:rgba(255,255,255,.2)}
+.deck-ctrl{position:absolute;bottom:26px;left:50%;transform:translateX(-50%);z-index:20;display:flex;
+  align-items:center;gap:22px}
+.deck-ctrl button.arrow{width:46px;height:46px;border-radius:50%;border:1px solid var(--line);
+  background:rgba(238,246,243,.06);color:var(--ice);font-size:22px;cursor:pointer;transition:.25s;
+  display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px)}
+.deck-ctrl button.arrow:hover{background:var(--solar);color:var(--night);border-color:var(--solar)}
+.deck-dots{display:flex;gap:11px}
+.deck-dots button{width:9px;height:9px;border-radius:50%;border:none;background:rgba(238,246,243,.22);
+  cursor:pointer;padding:0;transition:.3s}
+.deck-dots button.on{background:var(--solar-br);transform:scale(1.5);box-shadow:0 0 10px var(--solar)}
+.deck-prog{position:absolute;bottom:0;left:0;height:3px;z-index:20;
+  background:linear-gradient(90deg,var(--green),var(--solar-br));width:0;transition:width .5s ease}
+/* deck typography */
+.dk{display:inline-flex;align-items:center;gap:14px;font-size:clamp(11px,1vw,13px);letter-spacing:.4em;
+  text-transform:uppercase;color:var(--solar-br);font-weight:600;margin-bottom:20px}
+.dk::before{content:'';width:36px;height:1px;background:var(--solar)}
+.light .dk{color:#1b8a60}.light .dk::before{background:#1b8a60}
+.dh{font-family:'Anton',sans-serif;font-size:clamp(44px,8vw,120px);line-height:.93;text-transform:uppercase}
+.dh.huge{font-size:clamp(52px,9vw,140px)}
+.dh .o{-webkit-text-stroke:1.5px currentColor;color:transparent}
+.dh .g{color:var(--green-br)}.light .dh .g{color:#1b8a60}
+.dh .serif{font-family:'Fraunces',serif;font-style:italic;font-weight:500}
+.dp{font-size:clamp(16px,1.7vw,24px);color:var(--dim);max-width:52ch;margin-top:26px;line-height:1.5}
+.light .dp{color:#4a6560}
+.dquote{font-family:'Fraunces';font-style:italic;font-size:clamp(30px,5vw,70px);line-height:1.15;
+  display:block;quotes:none;max-width:20ch}
+.dby{margin-top:26px;font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--solar-br);font-weight:700}
+/* deck stats */
+.dstats{display:grid;grid-template-columns:repeat(4,1fr);gap:22px;margin-top:50px;width:100%}
+.dstats>div{border-top:1px solid var(--line);padding-top:16px}
+.dstats b{font-family:'Anton';font-size:clamp(40px,5.5vw,84px);color:var(--solar-br);display:block;line-height:1}
+.dstats span{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin-top:10px;display:block}
+@media(max-width:760px){.dstats{grid-template-columns:repeat(2,1fr)}}
+/* deck sources */
+.dsrc{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:50px;width:100%}
+.dsrc>div{position:relative;aspect-ratio:3/4;border-radius:16px;overflow:hidden;display:flex;
+  align-items:flex-end;padding:20px;box-shadow:0 20px 50px rgba(0,0,0,.45)}
+.dsrc .n{font-size:11px;color:var(--solar-br);letter-spacing:.14em;font-weight:700}
+.dsrc h4{font-family:'Anton';font-size:22px;text-transform:uppercase;margin-top:4px}
+.dsrc>div>div{position:relative;z-index:2}
+@media(max-width:760px){.dsrc{grid-template-columns:repeat(2,1fr)}}
+/* deck split (warum / mix) */
+.split2{display:grid;grid-template-columns:1fr 1fr;gap:clamp(30px,5vw,72px);align-items:center}
+.split2 .s2-txt{display:flex;flex-direction:column;justify-content:center}
+.s2-img{position:relative;border-radius:20px;aspect-ratio:4/5;background-size:cover;background-position:center;
+  box-shadow:0 30px 70px rgba(0,0,0,.5)}
+.s2-badge{position:absolute;left:20px;bottom:20px;background:rgba(7,20,26,.72);backdrop-filter:blur(8px);
+  padding:12px 18px;border-radius:12px;border:1px solid var(--line)}
+.s2-badge b{font-family:'Anton';font-size:26px;color:var(--solar-br);display:block;line-height:1}
+.s2-badge span{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
+@media(max-width:760px){.split2{grid-template-columns:1fr}.s2-img{display:none}}
+/* deck bars */
+.dbars{display:flex;flex-direction:column;gap:20px}
+.dbars .bar .top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px}
+.dbars .nm{font-size:14px;letter-spacing:.06em;text-transform:uppercase;font-weight:700;color:#2a3f3a}
+.dbars .pct{font-family:'Anton';font-size:24px;color:#1b8a60}
+.dbars .track{height:14px;border-radius:10px;background:rgba(27,138,96,.14);overflow:hidden}
+.dbars .fill{height:100%;width:0;border-radius:10px;transition:width 1.3s cubic-bezier(.2,.8,.2,1)}
+/* deck steps */
+.dsteps{margin-top:40px;border-top:1px solid var(--line)}
+.dstep{display:grid;grid-template-columns:80px 1fr auto;gap:26px;align-items:center;padding:22px 0;
+  border-bottom:1px solid var(--line)}
+.dstep .n{font-family:'Anton';font-size:40px;color:var(--solar)}
+.dstep h4{font-family:'Anton';font-size:clamp(20px,2.2vw,30px);text-transform:uppercase}
+.dstep p{font-size:14px;color:var(--dim);margin-top:4px}
+.dstep .tag{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--green-br);font-weight:700}
+.closeS{position:relative;overflow:hidden}
+.dglow{position:absolute;width:70vw;height:70vw;border-radius:50%;left:50%;top:55%;transform:translate(-50%,-50%);
+  background:radial-gradient(circle,rgba(246,183,60,.2),transparent 62%);z-index:0}
+.closeS>*{position:relative;z-index:2}
+/* deck entrance stagger */
+.dslide .dk,.dslide .dh,.dslide .dp,.dslide .dstats,.dslide .dsrc,.dslide .dsteps,.dslide .dbars,
+.dslide .dquote,.dslide .dby,.dslide .s2-img,.dslide .s2-txt{opacity:0;transform:translateY(28px);
+  transition:opacity .7s cubic-bezier(.2,.7,.2,1),transform .7s cubic-bezier(.2,.7,.2,1)}
+.dslide.on .dk{opacity:1;transform:none;transition-delay:.1s}
+.dslide.on .dh,.dslide.on .s2-txt{opacity:1;transform:none;transition-delay:.22s}
+.dslide.on .dp,.dslide.on .dquote{opacity:1;transform:none;transition-delay:.34s}
+.dslide.on .dby{opacity:1;transform:none;transition-delay:.46s}
+.dslide.on .dstats,.dslide.on .dsrc,.dslide.on .dsteps,.dslide.on .dbars,.dslide.on .s2-img{
+  opacity:1;transform:none;transition-delay:.42s}
 </style>
 </head>
 <body>
 <div class="progress-top" id="ptop"></div>
+<div class="grain"></div>
 
 <nav id="nav">
   <div class="logo"><span class="d"></span>ENERGIEWENDE</div>
@@ -193,8 +314,12 @@ footer .logo{color:var(--ice)}
     <a href="#mix">Strommix</a>
     <a href="#weg">Der Weg</a>
   </div>
-  <a href="#cta" class="navcta">Mitmachen</a>
+  <button class="navcta present-btn" id="presentBtn">▶&nbsp;&nbsp;Präsentation</button>
 </nav>
+
+<button class="float-present" id="presentBtn2" aria-label="Präsentation starten">
+  <span class="pulse"></span>▶ Präsentation
+</button>
 
 <!-- HERO -->
 <header class="hero">
@@ -377,6 +502,160 @@ function fillBars(){ if(barsDone)return; barsDone=true;
     setTimeout(()=>f.style.width=f.dataset.w+'%', i*120);
   });
 }
+</script>
+<!-- ============ PRESENTATION DECK ============ -->
+<div class="deck" id="deck" aria-hidden="true">
+  <div class="deck-top">
+    <div class="deck-logo"><span class="d"></span>ENERGIEWENDE</div>
+    <div class="deck-count"><span id="dcur">01</span> / 09</div>
+    <button class="deck-exit" id="deckExit">✕ Schließen</button>
+  </div>
+  <div class="deck-stage" id="deckStage">
+
+    <section class="dslide on" style="background:linear-gradient(100deg,rgba(7,20,26,.92),rgba(7,20,26,.45) 58%,rgba(7,20,26,.18)),url('https://images.unsplash.com/photo-1466611653911-95081537e5b7?w=2400&q=80') center/cover">
+      <div class="dwrap">
+        <span class="dk">Die Energiewende · 2026</span>
+        <h2 class="dh">DIE ZUKUNFT<br><span class="o">IST</span> <span class="g">ERNEUERBAR</span></h2>
+        <p class="dp">Sonne, Wind und Wasser — sauber, sicher und unerschöpflich. Zeit, den Wandel zu gestalten.</p>
+      </div>
+    </section>
+
+    <section class="dslide split2" style="padding:clamp(40px,7vw,120px)">
+      <div class="s2-txt">
+        <span class="dk">Warum jetzt</span>
+        <h2 class="dh">JEDE KWH<br><span class="serif g">zählt.</span></h2>
+        <p class="dp">Erneuerbare sind längst die günstigste Stromquelle der Geschichte — die Frage ist nicht ob, sondern wie schnell.</p>
+      </div>
+      <div class="s2-img" style="background-image:url('https://images.unsplash.com/photo-1611273426858-450d8e3c9fce?w=1200&q=80')">
+        <div class="s2-badge"><b>+1,3°C</b><span>bereits erwärmt</span></div>
+      </div>
+    </section>
+
+    <section class="dslide dark center-col">
+      <span class="dk">Die Zahlen</span>
+      <h2 class="dh">DER WANDEL <span class="serif g">läuft</span></h2>
+      <div class="dstats">
+        <div><b>30%</b><span>des Weltstroms</span></div>
+        <div><b>50%</b><span>in Deutschland 2025</span></div>
+        <div><b>−90%</b><span>Solarkosten seit 2010</span></div>
+        <div><b>+13%</b><span>Ausbau pro Jahr</span></div>
+      </div>
+    </section>
+
+    <section class="dslide dark center-col">
+      <span class="dk">Die Quellen</span>
+      <h2 class="dh">VIER KRÄFTE <span class="serif g">der Natur</span></h2>
+      <div class="dsrc">
+        <div style="background:linear-gradient(0deg,rgba(7,20,26,.92),transparent 65%),url('https://images.unsplash.com/photo-1509391366360-2e959784a276?w=900&q=80') center/cover"><div><div class="n">01 · SOLAR</div><h4>Sonne</h4></div></div>
+        <div style="background:linear-gradient(0deg,rgba(7,20,26,.92),transparent 65%),url('https://images.unsplash.com/photo-1532601224476-15c79f2f7a51?w=900&q=80') center/cover"><div><div class="n">02 · WIND</div><h4>Wind</h4></div></div>
+        <div style="background:linear-gradient(0deg,rgba(7,20,26,.92),transparent 65%),url('https://images.unsplash.com/photo-1432405972618-c60b0225b8f9?w=900&q=80') center/cover"><div><div class="n">03 · WASSER</div><h4>Wasser</h4></div></div>
+        <div style="background:linear-gradient(0deg,rgba(7,20,26,.92),transparent 65%),url('https://images.unsplash.com/photo-1448375240586-882707db888b?w=900&q=80') center/cover"><div><div class="n">04 · BIO & GEO</div><h4>Bio &amp; Geo</h4></div></div>
+      </div>
+    </section>
+
+    <section class="dslide center-col" style="text-align:center;align-items:center;background:linear-gradient(rgba(7,20,26,.62),rgba(7,20,26,.62)),url('https://images.unsplash.com/photo-1548337138-e87d889cc369?w=2400&q=80') center/cover">
+      <h2 class="dh huge">BIS <span class="serif g">2040</span><br>KLIMANEUTRAL</h2>
+      <p class="dp" style="margin-left:auto;margin-right:auto">Offshore-Wind allein kann ganze Länder versorgen — die Nordsee wird zum Kraftwerk Europas.</p>
+    </section>
+
+    <section class="dslide light split2" style="padding:clamp(40px,7vw,120px)">
+      <div class="s2-txt">
+        <span class="dk">Der Strommix</span>
+        <h2 class="dh">WOHER DER<br><span class="serif">Strom kommt</span></h2>
+        <p class="dp">Anteil der Quellen am deutschen Stromverbrauch.</p>
+      </div>
+      <div class="dbars">
+        <div class="bar"><div class="top"><span class="nm">Wind</span><span class="pct">31%</span></div><div class="track"><div class="fill" data-w="78" style="background:linear-gradient(90deg,#3fc08a,#5fe0a8)"></div></div></div>
+        <div class="bar"><div class="top"><span class="nm">Solar</span><span class="pct">24%</span></div><div class="track"><div class="fill" data-w="60" style="background:linear-gradient(90deg,#f6b73c,#ffcf61)"></div></div></div>
+        <div class="bar"><div class="top"><span class="nm">Biomasse</span><span class="pct">14%</span></div><div class="track"><div class="fill" data-w="35" style="background:linear-gradient(90deg,#5fe0a8,#8ef0c4)"></div></div></div>
+        <div class="bar"><div class="top"><span class="nm">Wasser</span><span class="pct">9%</span></div><div class="track"><div class="fill" data-w="22" style="background:linear-gradient(90deg,#3fa8c0,#5fc8e0)"></div></div></div>
+        <div class="bar"><div class="top"><span class="nm">Fossil / Rest</span><span class="pct">22%</span></div><div class="track"><div class="fill" data-w="55" style="background:linear-gradient(90deg,#9aafb0,#b8cccc)"></div></div></div>
+      </div>
+    </section>
+
+    <section class="dslide dark">
+      <div class="dwrap">
+        <span class="dk">Der Weg</span>
+        <h2 class="dh">IN VIER <span class="serif g">Schritten</span></h2>
+        <div class="dsteps">
+          <div class="dstep"><div class="n">01</div><div><h4>Erzeugen</h4><p>Dächer, Felder und Meere in Kraftwerke verwandeln.</p></div><div class="tag">heute</div></div>
+          <div class="dstep"><div class="n">02</div><div><h4>Speichern</h4><p>Batterien und Wasserstoff puffern Sonne für die Nacht.</p></div><div class="tag">+2 Jahre</div></div>
+          <div class="dstep"><div class="n">03</div><div><h4>Vernetzen</h4><p>Smarte Netze verteilen Strom über Grenzen hinweg.</p></div><div class="tag">+5 Jahre</div></div>
+          <div class="dstep"><div class="n">04</div><div><h4>Elektrifizieren</h4><p>Wärme, Verkehr und Industrie laufen sauber mit Strom.</p></div><div class="tag">2040</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="dslide" style="background:linear-gradient(90deg,rgba(7,20,26,.92),rgba(7,20,26,.4)),url('https://images.unsplash.com/photo-1432405972618-c60b0225b8f9?w=2400&q=80') center/cover">
+      <div class="dwrap">
+        <span class="dk">Der Kern</span>
+        <q class="dquote">Die Sonne schickt keine Rechnung. Wir müssen sie nur ernten.</q>
+        <div class="dby">— Leitsatz der Energiewende</div>
+      </div>
+    </section>
+
+    <section class="dslide dark center-col closeS" style="text-align:center;align-items:center">
+      <div class="dglow"></div>
+      <h2 class="dh huge">SAUBER.<br><span class="g">FÜR IMMER.</span></h2>
+      <p class="dp" style="margin-left:auto;margin-right:auto">Die Technik ist da, die Kosten fallen, die Zeit drängt. Jede Anlage bringt uns näher ans Ziel.</p>
+    </section>
+
+  </div>
+  <div class="deck-ctrl">
+    <button class="arrow" id="dprev">‹</button>
+    <div class="deck-dots" id="deckDots"></div>
+    <button class="arrow" id="dnext">›</button>
+  </div>
+  <div class="deck-prog" id="deckProg"></div>
+</div>
+
+<script>
+(function(){
+  const deck=document.getElementById('deck');
+  const dslides=[...deck.querySelectorAll('.dslide')];
+  const dcur=document.getElementById('dcur'), deckProg=document.getElementById('deckProg');
+  const deckDots=document.getElementById('deckDots');
+  let di=0;
+  dslides.forEach((_,k)=>{const b=document.createElement('button');b.onclick=()=>goD(k);deckDots.appendChild(b);});
+  const ddots=[...deckDots.children];
+  function goD(n){
+    n=(n+dslides.length)%dslides.length;
+    dslides[di].classList.remove('on'); di=n; dslides[di].classList.add('on');
+    dcur.textContent=String(di+1).padStart(2,'0');
+    deckProg.style.width=((di+1)/dslides.length*100)+'%';
+    ddots.forEach((d,k)=>d.classList.toggle('on',k===di));
+    dslides[di].querySelectorAll('.dbars .fill').forEach((f,i)=>{
+      f.style.width='0'; setTimeout(()=>f.style.width=f.dataset.w+'%', 350+i*110);
+    });
+  }
+  function openDeck(){
+    deck.classList.add('open'); document.body.style.overflow='hidden';
+    const el=document.documentElement; // fullscreen the whole page so deck fills screen
+    if(deck.requestFullscreen) deck.requestFullscreen().catch(()=>{});
+    goD(0);
+  }
+  function closeDeck(){
+    deck.classList.remove('open'); document.body.style.overflow='';
+    if(document.fullscreenElement) document.exitFullscreen().catch(()=>{});
+  }
+  document.getElementById('presentBtn').onclick=openDeck;
+  const pb2=document.getElementById('presentBtn2'); if(pb2) pb2.onclick=openDeck;
+  document.getElementById('deckExit').onclick=closeDeck;
+  document.getElementById('dnext').onclick=()=>goD(di+1);
+  document.getElementById('dprev').onclick=()=>goD(di-1);
+  document.addEventListener('keydown',e=>{
+    if(!deck.classList.contains('open'))return;
+    if(e.key==='ArrowRight'||e.key===' '){e.preventDefault();goD(di+1);}
+    if(e.key==='ArrowLeft')goD(di-1);
+    if(e.key==='Escape')closeDeck();
+  });
+  let dsx=0;
+  deck.addEventListener('touchstart',e=>dsx=e.touches[0].clientX,{passive:true});
+  deck.addEventListener('touchend',e=>{const d=e.changedTouches[0].clientX-dsx;if(Math.abs(d)>50)goD(di+(d<0?1:-1));});
+  document.addEventListener('fullscreenchange',()=>{
+    if(!document.fullscreenElement && deck.classList.contains('open')) closeDeck();
+  });
+})();
 </script>
 </body>
 </html>

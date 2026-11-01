@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ENERGIEWENDE — Cinematic</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;600;700;800;900&family=Fraunces:ital,opsz,wght@0,9..144,400;1,9..144,500;1,9..144,600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --black:#05080a; --ink:#0a1014; --ice:#f2f7f5; --dim:#9db3b0;
+  --solar:#f6b73c; --solar-br:#ffcf61; --green:#4ad29a; --green-br:#6fe6b4;
+  --line:rgba(242,247,245,.14);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{background:var(--black);color:var(--ice);font-family:'Archivo',system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;user-select:none}
+
+/* fixed cinematic overlays */
+.grain{position:fixed;inset:0;z-index:60;pointer-events:none;opacity:.05;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.vignette{position:fixed;inset:0;z-index:55;pointer-events:none;
+  box-shadow:inset 0 0 26vw rgba(0,0,0,.72)}
+.letterbox{position:fixed;left:0;right:0;z-index:58;pointer-events:none;height:6vh;background:var(--black)}
+.letterbox.top{top:0}.letterbox.bot{bottom:0}
+
+/* stage */
+.stage{position:fixed;inset:0}
+.cslide{position:absolute;inset:0;opacity:0;visibility:hidden;transition:opacity 1s ease;z-index:1}
+.cslide.on{opacity:1;visibility:visible;z-index:2}
+.cbg{position:absolute;inset:0;background-size:cover;background-position:center;transform:scale(1.02);
+  transition:transform 11s linear;z-index:0;will-change:transform}
+.cslide.on .cbg{transform:scale(1.15)}
+.cveil{position:absolute;inset:0;z-index:1}
+.veil-l{background:linear-gradient(90deg,rgba(5,8,10,.94) 0%,rgba(5,8,10,.55) 42%,rgba(5,8,10,.08) 75%,rgba(5,8,10,.3)),
+  linear-gradient(0deg,rgba(5,8,10,.92),transparent 48%)}
+.veil-c{background:radial-gradient(130% 100% at 50% 60%,transparent 20%,rgba(5,8,10,.55) 70%,rgba(5,8,10,.85)),
+  linear-gradient(0deg,rgba(5,8,10,.85),transparent 55%)}
+.veil-dark{background:linear-gradient(0deg,rgba(5,8,10,.95),rgba(5,8,10,.78))}
+.cbody{position:absolute;inset:0;z-index:3;display:flex;flex-direction:column;justify-content:flex-end;
+  padding:clamp(40px,7vw,120px);padding-bottom:clamp(70px,11vh,140px)}
+.cbody.center{justify-content:center;align-items:center;text-align:center}
+
+/* typography */
+.ck{display:inline-flex;align-items:center;gap:14px;font-size:clamp(11px,1vw,13px);letter-spacing:.42em;
+  text-transform:uppercase;color:var(--solar-br);font-weight:600;margin-bottom:22px}
+.ck::before{content:'';width:40px;height:1px;background:var(--solar)}
+.ck.c-dark{color:#1b8a60}.ck.c-dark::before{background:#1b8a60}
+.ch{font-family:'Anton',sans-serif;font-size:clamp(50px,10vw,165px);line-height:.88;text-transform:uppercase;
+  letter-spacing:.005em;text-shadow:0 10px 50px rgba(0,0,0,.5)}
+.ch .o{-webkit-text-stroke:1.6px var(--ice);color:transparent}
+.ch .g{color:var(--green-br)}
+.ch .serif{font-family:'Fraunces',serif;font-style:italic;font-weight:500}
+.csub{font-size:clamp(16px,1.7vw,24px);color:var(--dim);max-width:54ch;margin-top:28px;line-height:1.5;
+  text-shadow:0 4px 20px rgba(0,0,0,.6)}
+.center .csub{margin-left:auto;margin-right:auto}
+
+/* chapter dividers */
+.chapter .cbody{justify-content:center}
+.chapnum{font-family:'Anton';font-size:clamp(130px,30vw,440px);line-height:.8;color:transparent;
+  -webkit-text-stroke:2px rgba(242,247,245,.22);letter-spacing:.02em}
+.chaplabel{font-family:'Anton';font-size:clamp(40px,8vw,120px);text-transform:uppercase;margin-top:-2vh;line-height:.9}
+.chaplabel .g{color:var(--green-br)}
+.chapsub{font-size:14px;letter-spacing:.3em;text-transform:uppercase;color:var(--dim);margin-top:22px}
+
+/* stats */
+.cstats{display:grid;grid-template-columns:repeat(4,1fr);gap:26px;margin-top:46px;width:100%;max-width:1200px}
+.cstats>div{border-top:1px solid var(--line);padding-top:16px}
+.cstats b{font-family:'Anton';font-size:clamp(40px,5.5vw,88px);color:var(--solar-br);display:block;line-height:1}
+.cstats span{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin-top:10px;display:block}
+@media(max-width:760px){.cstats{grid-template-columns:repeat(2,1fr)}}
+
+/* bars (light) */
+.light-slide{background:linear-gradient(180deg,#eef6f3,#dde9e5)}
+.light-slide .cbody{color:var(--black)}
+.cmix{display:grid;grid-template-columns:.85fr 1.15fr;gap:clamp(30px,5vw,80px);align-items:center;width:100%}
+.cbars{display:flex;flex-direction:column;gap:22px}
+.cbars .bartop{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+.cbars .nm{font-size:14px;letter-spacing:.06em;text-transform:uppercase;font-weight:700;color:#2a3f3a}
+.cbars .pct{font-family:'Anton';font-size:26px;color:#1b8a60}
+.cbars .track{height:15px;border-radius:10px;background:rgba(27,138,96,.14);overflow:hidden}
+.cbars .fill{height:100%;width:0;border-radius:10px;transition:width 1.4s cubic-bezier(.2,.8,.2,1)}
+@media(max-width:820px){.cmix{grid-template-columns:1fr}}
+
+/* steps */
+.csteps{margin-top:40px;border-top:1px solid var(--line);width:100%;max-width:1150px}
+.cstep{display:grid;grid-template-columns:90px 1fr auto;gap:28px;align-items:center;padding:22px 0;
+  border-bottom:1px solid var(--line)}
+.cstep .n{font-family:'Anton';font-size:44px;color:var(--solar)}
+.cstep h4{font-family:'Anton';font-size:clamp(20px,2.3vw,32px);text-transform:uppercase}
+.cstep p{font-size:14px;color:var(--dim);margin-top:4px}
+.cstep .tag{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--green-br);font-weight:700}
+
+/* quote */
+.cquote{font-family:'Fraunces';font-style:italic;font-size:clamp(32px,5.4vw,78px);line-height:1.12;
+  max-width:20ch;quotes:none;text-shadow:0 8px 40px rgba(0,0,0,.6)}
+.cby{margin-top:28px;font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--solar-br);font-weight:700}
+
+/* chrome */
+.top{position:fixed;top:0;left:0;right:0;z-index:40;display:flex;justify-content:space-between;align-items:center;
+  padding:calc(6vh + 14px) clamp(24px,5vw,56px) 14px;mix-blend-mode:difference;color:#fff}
+.logo{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:.26em;font-size:13px}
+.logo .d{width:9px;height:9px;border-radius:50%;background:var(--solar)}
+.count{font-size:12px;letter-spacing:.22em;font-weight:700}
+.ctrl{position:fixed;bottom:calc(6vh + 20px);left:50%;transform:translateX(-50%);z-index:40;display:flex;
+  align-items:center;gap:22px}
+.ctrl .arrow{width:48px;height:48px;border-radius:50%;border:1px solid var(--line);background:rgba(242,247,245,.05);
+  color:var(--ice);font-size:22px;cursor:pointer;transition:.25s;display:flex;align-items:center;justify-content:center;
+  backdrop-filter:blur(6px)}
+.ctrl .arrow:hover{background:var(--solar);color:var(--black);border-color:var(--solar)}
+.dots{display:flex;gap:9px;max-width:60vw;flex-wrap:wrap;justify-content:center}
+.dots button{width:8px;height:8px;border-radius:50%;border:none;background:rgba(242,247,245,.24);cursor:pointer;
+  padding:0;transition:.3s}
+.dots button.on{background:var(--solar-br);transform:scale(1.5);box-shadow:0 0 10px var(--solar)}
+.prog{position:fixed;top:0;left:0;height:3px;z-index:45;background:linear-gradient(90deg,var(--green),var(--solar-br));
+  width:0;transition:width .5s ease;box-shadow:0 0 12px rgba(246,183,60,.5)}
+.fsbtn{position:fixed;top:calc(6vh + 10px);right:clamp(24px,5vw,56px);z-index:41;background:rgba(242,247,245,.08);
+  border:1px solid var(--line);color:#fff;padding:9px 15px;border-radius:30px;font-size:12px;letter-spacing:.08em;
+  cursor:pointer;font-family:inherit;backdrop-filter:blur(6px);transition:.25s;mix-blend-mode:normal}
+.fsbtn:hover{background:var(--solar);color:var(--black);border-color:var(--solar)}
+.hintbar{position:fixed;left:clamp(24px,5vw,56px);bottom:calc(6vh + 24px);z-index:40;font-size:11px;
+  letter-spacing:.2em;text-transform:uppercase;color:var(--dim);opacity:.5}
+@media(max-width:620px){.hintbar{display:none}}
+
+/* entrance stagger */
+.cslide .ck,.cslide .ch,.cslide .csub,.cslide .cstats,.cslide .csteps,.cslide .cbars,.cslide .cquote,
+.cslide .cby,.cslide .chapnum,.cslide .chaplabel,.cslide .chapsub,.cslide .cmix>div{
+  opacity:0;transform:translateY(30px);transition:opacity .9s cubic-bezier(.2,.7,.2,1),transform .9s cubic-bezier(.2,.7,.2,1)}
+.cslide.on .ck,.cslide.on .chapnum{opacity:1;transform:none;transition-delay:.15s}
+.cslide.on .ch,.cslide.on .chaplabel,.cslide.on .cmix>div:first-child{opacity:1;transform:none;transition-delay:.3s}
+.cslide.on .csub,.cslide.on .chapsub,.cslide.on .cquote{opacity:1;transform:none;transition-delay:.46s}
+.cslide.on .cby{opacity:1;transform:none;transition-delay:.6s}
+.cslide.on .cstats,.cslide.on .csteps,.cslide.on .cbars,.cslide.on .cmix>div:last-child{opacity:1;transform:none;transition-delay:.5s}
+</style>
+</head>
+<body>
+<div class="grain"></div>
+<div class="vignette"></div>
+<div class="letterbox top"></div>
+<div class="letterbox bot"></div>
+<div class="prog" id="prog"></div>
+
+<div class="top">
+  <div class="logo"><span class="d"></span>ENERGIEWENDE</div>
+  <div class="count"><span id="cur">01</span> / 17</div>
+</div>
+<button class="fsbtn" id="fsbtn">⛶ Vollbild</button>
+<div class="hintbar">← → blättern · F Vollbild</div>
+
+<div class="stage" id="stage">
+
+  <!-- 1 COVER -->
+  <section class="cslide on">
+    <div class="cbg" style="background-image:url('IMG_cover')"></div>
+    <div class="cveil veil-l"></div>
+    <div class="cbody">
+      <span class="ck">Die Energiewende · 2026</span>
+      <h1 class="ch">DIE ZUKUNFT<br><span class="o">IST</span> <span class="g">ERNEUERBAR</span></h1>
+      <p class="csub">Sonne, Wind und Wasser — sauber, sicher und unerschöpflich. Eine Reise in die Energie von morgen.</p>
+    </div>
+  </section>
+
+  <!-- 2 STATEMENT -->
+  <section class="cslide">
+    <div class="cbg" style="background-image:url('IMG_problem')"></div>
+    <div class="cveil veil-l"></div>
+    <div class="cbody">
+      <span class="ck">Warum jetzt</span>
+      <h1 class="ch">JEDE KWH<br><span class="serif g">zählt.</span></h1>
+      <p class="csub">Fossile Energie ist endlich und teuer. Die Frage ist nicht ob, sondern wie schnell wir den Wandel schaffen.</p>
+    </div>
+  </section>
+
+  <!-- 3 STATS -->
+  <section class="cslide">
+    <div class="cbg" style="background-image:url('IMG_aerial')"></div>
+    <div class="cveil veil-dark"></div>
+    <div class="cbody">
+      <span class="ck">Die Zahlen</span>
+      <h1 class="ch" style="font-size:clamp(40px,6.5vw,104px)">DER WANDEL <span class="serif g">läuft</span></h1>
+      <div class="cstats">
+        <div><b>30%</b><span>des Weltstroms</span></div>
+        <div><b>50%</b><span>in Deutschland 2025</span></div>
+        <div><b>−90%</b><span>Solarkosten seit 2010</span></div>
+        <div><b>+13%</b><span>Ausbau pro Jahr</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 CHAPTER 01 -->
+  <section class="cslide chapter">
+    <div class="cbg" style="background-image:url('IMG_solarpanel')"></div>
+    <div class="cveil veil-c"></div>
+    <div class="cbody center">
+      <div class="chapnum">01</div>
+      <div class="chaplabel"><span class="g">Sonne</span></div>
+      <div class="chapsub">Photovoltaik · Die erste Kraft</div>
+    </div>
+  </section>
+
+  <!-- 5 SOLAR -->
+  <section class="cslide">
+    <div class="cbg" style="background-image:url('IMG_solarmacro')"></div>
+    <div class="cveil veil-l"></div>
+    <div class="cbody">
+      <span class="ck">Solar</span>
+      <h1 class="ch">ENDLOSE<br><span class="g">KRAFT</span></h1>
+      <p class="csub">Jede Stunde trifft mehr Sonnenenergie auf die Erde, als die Menschheit in einem Jahr verbraucht. Wir müssen sie nur ernten.</p>
+    </div>
+  </section>
+
+  <!-- 6 CHAPTER 02 -->
+  <section class="cslide chapter">
+    <div class="cbg" style="background-image:url('IMG_windhills')"></div>
+    <div class="cveil veil-c"></div>
+    <div class="cbody center">
+      <div class="chapnum">02</div>
+      <div class="chaplabel"><span class="g">Wind</span></div>
+      <div class="chapsub">Onshore & Offshore · Die zweite Kraft</div>
+    </div>
+  </section>
+
+  <!-- 7 WIND -->
+  <section class="cslide">
+    <div class="cbg" style="background-image:url('IMG_offshore')"></div>
+    <div class="cveil veil-l"></div>
+    <div class="cbody">
+      <span class="ck">Wind</span>
+      <h1 class="ch">DER ATEM<br><span class="serif g">der Erde</span></h1>
+      <p class="csub">Turbinen an Land und auf See liefern Strom, wenn die Sonne schläft — die Nordsee wird zum Kraftwerk Europas.</p>
+    </div>
+  </section>
+
+  <!-- 8 CHAPTER 03 -->
+  <section class="cslide chapter">
+    <div class="cbg" style="background-image:url('IMG_waterfall')"></div>
+    <div class="cveil veil-c"></div>
+    <div class="cbody center">
+      <div class="chapnum">03</div>
+      <div class="chaplabel"><span class="g">Wasser</span></div>
+      <div class="chapsub">Wasserkraft · Die dritte Kraft</div>
+    </div>
+  </section>
+
+  <!-- 9 WATER -->
+  <section class="cslide">
+    <div class="cbg" style="background-image:url('IMG_waterfall')"></div>
+    <div class="cveil veil-l"></div>
+    <div class="cbody">
+      <span class="ck">Wasser</span>
+      <h1 class="ch">EWIGER<br><span class="g">FLUSS</span></h1>
+      <p class="csub">Wasserkraft speichert und erzeugt zugleich — der verlässlichste Taktgeber im Netz, Tag und Nacht.</p>
+    </div>
+  </section>
+
+  <!-- 10 CHAPTER 04 -->
+  <section class="cslide chapter">
+    <div class="cbg" style="background-image:url('IMG_forest')"></div>
+    <div class="cveil veil-c"></div>
+    <div class="cbody center">
+      <div class="chapnum">04</div>
+      <div class="chaplabel"><span class="g">Bio &amp; Geo</span></div>
+      <div class="chapsub">Biomasse & Erdwärme · Die vierte Kraft</div>
+    </div>
+  </section>
+
+  <!-- 11 BIO -->
+  <section class="cslide">
+    <div class="cbg" style="background-image:url('IMG_forest')"></div>
+    <div class="cveil veil-l"></div>
+    <div class="cbody">
+      <span class="ck">Bio &amp; Geo</span>
+      <h1 class="ch">AUS DER<br><span class="serif g">Tiefe</span></h1>
+      <p class="csub">Biomasse und Erdwärme füllen die Lücken und heizen ganze Städte — die Wärme, die unter uns schlummert.</p>
+    </div>
+  </section>
+
+  <!-- 12 STROMMIX -->
+  <section class="cslide light-slide">
+    <div class="cbody" style="justify-content:center">
+      <div class="cmix">
+        <div>
+          <span class="ck c-dark">Der Strommix</span>
+          <h1 class="ch" style="font-size:clamp(40px,6vw,92px)">WOHER DER<br><span class="serif" style="color:#1b8a60">Strom kommt</span></h1>
+          <p class="csub" style="color:#4a6560">Anteil der Quellen am deutschen Stromverbrauch.</p>
+        </div>
+        <div class="cbars">
+          <div class="bar"><div class="bartop"><span class="nm">Wind</span><span class="pct">31%</span></div><div class="track"><div class="fill" data-w="78" style="background:linear-gradient(90deg,#3fc08a,#5fe0a8)"></div></div></div>
+          <div class="bar"><div class="bartop"><span class="nm">Solar</span><span class="pct">24%</span></div><div class="track"><div class="fill" data-w="60" style="background:linear-gradient(90deg,#f6b73c,#ffcf61)"></div></div></div>
+          <div class="bar"><div class="bartop"><span class="nm">Biomasse</span><span class="pct">14%</span></div><div class="track"><div class="fill" data-w="35" style="background:linear-gradient(90deg,#5fe0a8,#8ef0c4)"></div></div></div>
+          <div class="bar"><div class="bartop"><span class="nm">Wasser</span><span class="pct">9%</span></div><div class="track"><div class="fill" data-w="22" style="background:linear-gradient(90deg,#3fa8c0,#5fc8e0)"></div></div></div>
+          <div class="bar"><div class="bartop"><span class="nm">Fossil / Rest</span><span class="pct">22%</span></div><div class="track"><div class="fill" data-w="55" style="background:linear-gradient(90deg,#9aafb0,#b8cccc)"></div></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 13 2040 -->
+  <section class="cslide">
+    <div class="cbg" style="background-image:url('IMG_mountain')"></div>
+    <div class="cveil veil-c"></div>
+    <div class="cbody center">
+      <span class="ck">Das Ziel</span>
+      <h1 class="ch" style="font-size:clamp(50px,9vw,150px)">BIS <span class="serif g">2040</span><br>KLIMANEUTRAL</h1>
+      <p class="csub">Der Gipfel ist in Sicht. Was heute beginnt, entscheidet, wie wir morgen leben.</p>
+    </div>
+  </section>
+
+  <!-- 14 DER WEG -->
+  <section class="cslide">
+    <div class="cbg" style="background-image:url('IMG_aerial')"></div>
+    <div class="cveil veil-dark"></div>
+    <div class="cbody">
+      <span class="ck">Der Weg</span>
+      <h1 class="ch" style="font-size:clamp(38px,6vw,96px)">IN VIER <span class="serif g">Schritten</span></h1>
+      <div class="csteps">
+        <div class="cstep"><div class="n">01</div><div><h4>Erzeugen</h4><p>Dächer, Felder und Meere in Kraftwerke verwandeln.</p></div><div class="tag">heute</div></div>
+        <div class="cstep"><div class="n">02</div><div><h4>Speichern</h4><p>Batterien und Wasserstoff puffern Sonne für die Nacht.</p></div><div class="tag">+2 Jahre</div></div>
+        <div class="cstep"><div class="n">03</div><div><h4>Vernetzen</h4><p>Smarte Netze verteilen Strom über Grenzen hinweg.</p></div><div class="tag">+5 Jahre</div></div>
+        <div class="cstep"><div class="n">04</div><div><h4>Elektrifizieren</h4><p>Wärme, Verkehr und Industrie laufen sauber mit Strom.</p></div><div class="tag">2040</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 15 INNOVATION -->
+  <section class="cslide">
+    <div class="cbg" style="background-image:url('IMG_engineer')"></div>
+    <div class="cveil veil-l"></div>
+    <div class="cbody">
+      <span class="ck">Die Menschen</span>
+      <h1 class="ch">GEBAUT VON<br><span class="g">Menschen</span></h1>
+      <p class="csub">Hinter jeder Anlage stehen Ingenieurinnen, Handwerker und Forscher — der Wandel ist eine Gemeinschaftsleistung.</p>
+    </div>
+  </section>
+
+  <!-- 16 QUOTE -->
+  <section class="cslide">
+    <div class="cbg" style="background-image:url('IMG_golden')"></div>
+    <div class="cveil veil-l"></div>
+    <div class="cbody">
+      <span class="ck">Der Kern</span>
+      <q class="cquote">Die Sonne schickt keine Rechnung. Wir müssen sie nur ernten.</q>
+      <div class="cby">— Leitsatz der Energiewende</div>
+    </div>
+  </section>
+
+  <!-- 17 CLOSE -->
+  <section class="cslide">
+    <div class="cbg" style="background-image:url('IMG_cover')"></div>
+    <div class="cveil veil-c"></div>
+    <div class="cbody center">
+      <span class="ck">Gestalten wir es</span>
+      <h1 class="ch" style="font-size:clamp(54px,10vw,170px)">SAUBER.<br><span class="g">FÜR IMMER.</span></h1>
+      <p class="csub">Die Technik ist da, die Kosten fallen, die Zeit drängt. Jede Entscheidung bringt uns näher ans Ziel.</p>
+    </div>
+  </section>
+
+</div>
+
+<div class="ctrl">
+  <button class="arrow" id="prev">‹</button>
+  <div class="dots" id="dots"></div>
+  <button class="arrow" id="next">›</button>
+</div>
+
+<script>
+(function(){
+  const slides=[...document.querySelectorAll('.cslide')];
+  const cur=document.getElementById('cur'), prog=document.getElementById('prog'), dotsEl=document.getElementById('dots');
+  let i=0;
+  slides.forEach((_,k)=>{const b=document.createElement('button');b.onclick=()=>go(k);dotsEl.appendChild(b);});
+  const dots=[...dotsEl.children];
+  function go(n){
+    n=(n+slides.length)%slides.length;
+    slides[i].classList.remove('on'); i=n; slides[i].classList.add('on');
+    cur.textContent=String(i+1).padStart(2,'0');
+    prog.style.width=((i+1)/slides.length*100)+'%';
+    dots.forEach((d,k)=>d.classList.toggle('on',k===i));
+    slides[i].querySelectorAll('.cbars .fill').forEach((f,k)=>{f.style.width='0';setTimeout(()=>f.style.width=f.dataset.w+'%',420+k*110);});
+  }
+  go(0);
+  document.getElementById('next').onclick=()=>go(i+1);
+  document.getElementById('prev').onclick=()=>go(i-1);
+  function fs(){const el=document.documentElement;document.fullscreenElement?document.exitFullscreen():el.requestFullscreen().catch(()=>{});}
+  document.getElementById('fsbtn').onclick=fs;
+  document.addEventListener('keydown',e=>{
+    if(e.key==='ArrowRight'||e.key===' '){e.preventDefault();go(i+1);}
+    if(e.key==='ArrowLeft')go(i-1);
+    if(e.key.toLowerCase()==='f')fs();
+  });
+  let sx=0;
+  addEventListener('touchstart',e=>sx=e.touches[0].clientX,{passive:true});
+  addEventListener('touchend',e=>{const d=e.changedTouches[0].clientX-sx;if(Math.abs(d)>50)go(i+(d<0?1:-1));});
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ERNEUERBARE ENERGIEN — Deck</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;600;700;800;900&family=Fraunces:ital,opsz,wght@0,9..144,400;1,9..144,500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --night:#081318;
+    --deep:#0e2430;
+    --teal:#10343c;
+    --panel:#123038;
+    --ice:#e9f4f1;
+    --ice-dim:#acc6c3;
+    --solar:#f3b53f;
+    --solar-br:#ffcf61;
+    --green:#3fb584;
+    --green-br:#5fd6a0;
+    --line:rgba(233,244,241,.13);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%}
+  body{background:#050c10;color:var(--ice);font-family:'Archivo',system-ui,sans-serif;
+    overflow:hidden;-webkit-font-smoothing:antialiased}
+  .grain{position:fixed;inset:0;pointer-events:none;z-index:50;opacity:.04;mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+
+  .stage{position:relative;width:100vw;height:100vh}
+  .slide{position:absolute;inset:0;display:flex;opacity:0;visibility:hidden;
+    transition:opacity .6s ease, transform .6s cubic-bezier(.22,.61,.36,1);
+    transform:scale(1.02);padding:clamp(32px,6vw,96px)}
+  .slide.active{opacity:1;visibility:visible;transform:scale(1);z-index:2}
+  .slide.prev{transform:scale(.985);opacity:0}
+
+  .topbar{position:fixed;top:0;left:0;right:0;z-index:40;display:flex;justify-content:space-between;
+    align-items:center;padding:22px clamp(32px,6vw,96px);font-size:12px;letter-spacing:.22em;
+    text-transform:uppercase;color:var(--ice-dim);mix-blend-mode:difference}
+  .brandmark{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:.3em}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--solar);box-shadow:0 0 14px var(--solar)}
+  .progress{position:fixed;left:0;bottom:0;height:3px;background:linear-gradient(90deg,var(--green),var(--solar-br));
+    z-index:40;transition:width .5s ease;box-shadow:0 0 18px rgba(255,207,97,.55)}
+  .nav{position:fixed;right:clamp(20px,4vw,48px);top:50%;transform:translateY(-50%);z-index:40;
+    display:flex;flex-direction:column;gap:14px}
+  .nav button{width:8px;height:8px;border-radius:50%;border:none;cursor:pointer;background:var(--line);
+    transition:.3s;padding:0}
+  .nav button.on{background:var(--solar-br);box-shadow:0 0 12px var(--solar);transform:scale(1.5)}
+  .hint{position:fixed;left:clamp(32px,6vw,96px);bottom:26px;z-index:40;font-size:11px;letter-spacing:.2em;
+    text-transform:uppercase;color:var(--ice-dim);opacity:.5}
+
+  .kicker{font-size:clamp(11px,1vw,13px);letter-spacing:.42em;text-transform:uppercase;color:var(--solar-br);
+    display:flex;align-items:center;gap:14px;font-weight:600}
+  .kicker::before{content:'';width:34px;height:1px;background:var(--solar)}
+  .display{font-family:'Anton',sans-serif;line-height:.92;letter-spacing:.005em;text-transform:uppercase;
+    font-size:clamp(50px,8.6vw,142px)}
+  .display .thin{-webkit-text-stroke:1.4px var(--ice);color:transparent}
+  .serif{font-family:'Fraunces',serif;font-style:italic;color:var(--green-br)}
+  .lede{font-size:clamp(15px,1.5vw,21px);line-height:1.6;color:var(--ice-dim);max-width:48ch;font-weight:400}
+
+  .btn{display:inline-flex;align-items:center;gap:12px;background:var(--solar);color:var(--night);
+    font-weight:700;letter-spacing:.14em;text-transform:uppercase;font-size:13px;padding:16px 28px;border-radius:40px}
+  .btn.ghost{background:transparent;color:var(--ice);border:1px solid var(--line)}
+
+  .fill{width:100%;display:flex;flex-direction:column;justify-content:center;gap:28px}
+  .two{display:grid;grid-template-columns:1.1fr .9fr;gap:clamp(30px,5vw,80px);align-items:center;width:100%}
+  .stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);
+    border:1px solid var(--line);border-radius:18px;overflow:hidden}
+  .stat{background:var(--deep);padding:clamp(22px,3vw,40px)}
+  .stat b{font-family:'Anton',sans-serif;font-size:clamp(38px,5vw,76px);color:var(--solar-br);display:block;line-height:1}
+  .stat span{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--ice-dim);margin-top:10px;display:block}
+
+  .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+  .card{background:linear-gradient(160deg,var(--teal),var(--deep));border:1px solid var(--line);
+    border-radius:20px;padding:clamp(20px,2.4vw,30px);position:relative;overflow:hidden}
+  .card .ic{font-size:32px;margin-bottom:16px}
+  .card h3{font-size:17px;letter-spacing:.02em;margin-bottom:9px;font-weight:800}
+  .card p{font-size:13.5px;line-height:1.5;color:var(--ice-dim)}
+  .card::after{content:'';position:absolute;right:-40px;top:-40px;width:120px;height:120px;border-radius:50%;
+    background:radial-gradient(circle,rgba(95,214,160,.16),transparent 70%)}
+
+  .steps{display:flex;flex-direction:column;gap:2px}
+  .step{display:grid;grid-template-columns:70px 1fr auto;gap:24px;align-items:center;padding:20px 0;
+    border-bottom:1px solid var(--line)}
+  .step .st-n{font-family:'Anton',sans-serif;font-size:34px;color:var(--solar)}
+  .step h4{font-size:clamp(18px,2vw,26px);font-weight:700}
+  .step p{font-size:14px;color:var(--ice-dim);margin-top:4px}
+  .step .tag{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--green-br)}
+
+  .bg-dark{background:radial-gradient(120% 120% at 78% 0%,#10343c 0%,#0e2430 52%,#050c10 100%)}
+  .bg-ice{background:linear-gradient(180deg,var(--ice),#d7e8e3)}
+  .bg-ice *{--ice-dim:#4a6560}
+  .bg-ice .display{color:var(--night)}
+  .bg-ice .kicker{color:#1f7d58}
+  .bg-ice .kicker::before{background:#1f7d58}
+  .bg-ice .serif{color:#1f7d58}
+  .bg-solar{background:linear-gradient(145deg,var(--solar) 0%,#d8902a 55%,#7a4f14 100%)}
+
+  .sun{position:absolute;right:-8%;top:-14%;width:48vw;height:48vw;border-radius:50%;
+    background:radial-gradient(circle,rgba(255,207,97,.5),rgba(243,181,63,.12) 45%,transparent 68%);
+    filter:blur(2px)}
+  .turbine{position:absolute;right:8%;bottom:-6%;width:3px;height:46%;background:var(--line)}
+  .smoke{position:absolute;color:rgba(233,244,241,.05);font-family:'Anton';font-size:40vw;line-height:1;
+    user-select:none;pointer-events:none}
+
+  .big-quote{font-family:'Fraunces',serif;font-style:italic;font-size:clamp(28px,4.6vw,64px);line-height:1.12;max-width:19ch}
+  .label{font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--ice-dim)}
+  .right{display:flex;flex-direction:column;gap:16px;justify-content:center}
+
+  .barwrap{display:flex;flex-direction:column;gap:18px;margin-top:8px}
+  .bar{display:grid;grid-template-columns:120px 1fr 70px;gap:18px;align-items:center}
+  .bar .bn{font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--ice-dim)}
+  .bar .track{height:14px;border-radius:10px;background:var(--line);overflow:hidden}
+  .bar .fillbar{height:100%;border-radius:10px;background:linear-gradient(90deg,var(--green),var(--solar-br))}
+  .bar .pv{font-family:'Anton';font-size:22px;color:var(--solar-br);text-align:right}
+</style>
+</head>
+<body>
+<div class="grain"></div>
+<div class="topbar">
+  <div class="brandmark"><span class="dot"></span>ENERGIEWENDE</div>
+  <div id="counter">01 / 08</div>
+</div>
+<div class="nav" id="nav"></div>
+<div class="progress" id="prog"></div>
+<div class="hint">← → navigieren · F Vollbild</div>
+
+<div class="stage" id="stage">
+
+  <!-- 1 COVER -->
+  <section class="slide active bg-dark">
+    <div class="sun"></div>
+    <div class="smoke" style="bottom:-16%;left:-3%">01</div>
+    <div class="fill" style="position:relative;z-index:3">
+      <div class="kicker">Die Energiewende · 2026</div>
+      <h1 class="display">DIE ZUKUNFT<br><span class="thin">IST</span> ERNEUERBAR</h1>
+      <p class="lede">Sonne, Wind und Wasser liefern heute mehr Strom als je zuvor — sauber, sicher und unerschöpflich. Zeit, den Wandel zu gestalten.</p>
+      <div style="display:flex;gap:14px;margin-top:8px">
+        <span class="btn">Jetzt umsteigen →</span>
+        <span class="btn ghost">Die Fakten ansehen</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2 WARUM -->
+  <section class="slide bg-ice">
+    <div class="two">
+      <div class="fill">
+        <div class="kicker">Warum jetzt</div>
+        <h2 class="display" style="font-size:clamp(40px,6.4vw,100px)">JEDE KWH<br><span class="serif" style="font-family:Fraunces;-webkit-text-stroke:0">zählt.</span></h2>
+        <p class="lede">Fossile Energie ist endlich, teuer und heizt das Klima auf. Erneuerbare sind längst die günstigste Stromquelle der Geschichte — die Frage ist nicht ob, sondern wie schnell.</p>
+      </div>
+      <div class="right">
+        <div class="stat-row" style="grid-template-columns:1fr;background:rgba(0,0,0,.07)">
+          <div class="stat" style="background:#0e2430;color:#e9f4f1"><b>1,5°C</b><span style="color:#acc6c3">das Ziel von Paris</span></div>
+        </div>
+        <div class="stat-row">
+          <div class="stat" style="background:#10343c;color:#e9f4f1"><b>−90%</b><span style="color:#acc6c3">Solarkosten seit 2010</span></div>
+          <div class="stat" style="background:#0e2430;color:#e9f4f1"><b>∞</b><span style="color:#acc6c3">Brennstoff: kostenlos</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 ZAHLEN -->
+  <section class="slide bg-dark">
+    <div class="fill">
+      <div class="kicker">Die Zahlen</div>
+      <h2 class="display" style="font-size:clamp(38px,6vw,96px)">DER WANDEL <span class="serif">läuft</span></h2>
+      <div class="stat-row" style="margin-top:20px">
+        <div class="stat"><b>30%</b><span>des Weltstroms aus Erneuerbaren</span></div>
+        <div class="stat"><b>50%</b><span>Anteil in Deutschland 2025</span></div>
+        <div class="stat"><b>+13%</b><span>Ausbau pro Jahr, weltweit</span></div>
+      </div>
+      <p class="lede" style="max-width:62ch">Solar und Wind wachsen schneller als jede Energieform zuvor. Der Markt hat entschieden — die Technik ist reif, die Kosten fallen weiter.</p>
+    </div>
+  </section>
+
+  <!-- 4 QUELLEN -->
+  <section class="slide bg-dark">
+    <div class="fill">
+      <div class="kicker">Die Quellen</div>
+      <h2 class="display" style="font-size:clamp(36px,5.5vw,88px)">VIER KRÄFTE <span class="serif">der Natur</span></h2>
+      <div class="cards" style="margin-top:14px">
+        <div class="card"><div class="ic">☀️</div><h3>Solar</h3><p>Photovoltaik wandelt Sonnenlicht direkt in Strom — auf jedem Dach, in jeder Wüste.</p></div>
+        <div class="card"><div class="ic">🌬️</div><h3>Wind</h3><p>Turbinen an Land und auf See liefern Grundlast, wenn die Sonne schläft.</p></div>
+        <div class="card"><div class="ic">💧</div><h3>Wasser</h3><p>Wasserkraft speichert und erzeugt — der verlässlichste Taktgeber im Netz.</p></div>
+        <div class="card"><div class="ic">🌱</div><h3>Bio &amp; Geo</h3><p>Biomasse und Erdwärme füllen die Lücken und heizen ganze Städte.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5 MIX / BARS -->
+  <section class="slide bg-ice">
+    <div class="two">
+      <div class="fill">
+        <div class="kicker">Der Strommix</div>
+        <h2 class="display" style="font-size:clamp(36px,5.5vw,84px)">WOHER DER<br><span class="serif">Strom kommt</span></h2>
+        <p class="lede">Anteil erneuerbarer Quellen am Stromverbrauch — der Weg zur Klimaneutralität in Prozent.</p>
+      </div>
+      <div class="barwrap">
+        <div class="bar"><span class="bn">Wind</span><div class="track"><div class="fillbar" style="width:31%"></div></div><span class="pv">31%</span></div>
+        <div class="bar"><span class="bn">Solar</span><div class="track"><div class="fillbar" style="width:24%"></div></div><span class="pv">24%</span></div>
+        <div class="bar"><span class="bn">Biomasse</span><div class="track"><div class="fillbar" style="width:14%"></div></div><span class="pv">14%</span></div>
+        <div class="bar"><span class="bn">Wasser</span><div class="track"><div class="fillbar" style="width:9%"></div></div><span class="pv">9%</span></div>
+        <div class="bar"><span class="bn">Fossil / Rest</span><div class="track"><div class="fillbar" style="width:22%;background:rgba(74,101,96,.5)"></div></div><span class="pv" style="color:#4a6560">22%</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6 QUOTE -->
+  <section class="slide bg-solar">
+    <div class="smoke" style="bottom:-20%;left:-4%;color:rgba(0,0,0,.1)">06</div>
+    <div class="fill" style="position:relative;z-index:3;align-items:flex-start">
+      <div class="kicker" style="color:#3a2607"><span style="--solar:#3a2607"></span>Der Kern</div>
+      <p class="big-quote" style="color:#2a1c04">„Die Sonne schickt keine Rechnung. Wir müssen sie nur ernten.“</p>
+      <div class="label" style="color:rgba(42,28,4,.72)">— Leitsatz der Energiewende</div>
+    </div>
+  </section>
+
+  <!-- 7 WEG / STEPS -->
+  <section class="slide bg-dark">
+    <div class="fill">
+      <div class="kicker">Der Weg</div>
+      <h2 class="display" style="font-size:clamp(34px,5vw,80px)">IN VIER <span class="serif">Schritten</span></h2>
+      <div class="steps" style="margin-top:10px">
+        <div class="step"><div class="st-n">01</div><div><h4>Erzeugen</h4><p>Dächer, Felder und Meere in Kraftwerke verwandeln.</p></div><div class="tag">heute</div></div>
+        <div class="step"><div class="st-n">02</div><div><h4>Speichern</h4><p>Batterien und Wasserstoff puffern Sonne für die Nacht.</p></div><div class="tag">+2 Jahre</div></div>
+        <div class="step"><div class="st-n">03</div><div><h4>Vernetzen</h4><p>Smarte Netze verteilen Strom über Grenzen hinweg.</p></div><div class="tag">+5 Jahre</div></div>
+        <div class="step"><div class="st-n">04</div><div><h4>Elektrifizieren</h4><p>Wärme, Verkehr und Industrie laufen sauber mit Strom.</p></div><div class="tag">2040</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8 CLOSE -->
+  <section class="slide bg-dark">
+    <div class="sun" style="opacity:.6;right:auto;left:-14%;top:auto;bottom:-20%"></div>
+    <div class="fill" style="position:relative;z-index:3">
+      <div class="kicker">Gestalten wir es</div>
+      <h2 class="display">SAUBER.<br><span class="thin">FÜR IMMER.</span></h2>
+      <p class="lede">Die Technik ist da, die Kosten fallen, die Zeit drängt. Jede Anlage, jede Entscheidung bringt uns näher ans Ziel.</p>
+      <div style="display:flex;gap:28px;align-items:center;margin-top:10px">
+        <span class="btn">Projekt starten →</span>
+        <div class="label">hallo@energiewende.de · @energiewende</div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+  const slides=[...document.querySelectorAll('.slide')];
+  const nav=document.getElementById('nav');
+  const prog=document.getElementById('prog');
+  const counter=document.getElementById('counter');
+  let i=0;
+  slides.forEach((_,k)=>{const b=document.createElement('button');b.onclick=()=>go(k);nav.appendChild(b)});
+  const dots=[...nav.children];
+  function go(n){
+    n=(n+slides.length)%slides.length;
+    slides[i].classList.remove('active');slides[i].classList.add('prev');
+    const prev=i;i=n;
+    slides[i].classList.remove('prev');slides[i].classList.add('active');
+    setTimeout(()=>slides[prev].classList.remove('prev'),600);
+    dots.forEach((d,k)=>d.classList.toggle('on',k===i));
+    prog.style.width=((i+1)/slides.length*100)+'%';
+    counter.textContent=String(i+1).padStart(2,'0')+' / '+String(slides.length).padStart(2,'0');
+  }
+  dots[0].classList.add('on');prog.style.width=(1/slides.length*100)+'%';
+  document.addEventListener('keydown',e=>{
+    if(e.key==='ArrowRight'||e.key===' ')go(i+1);
+    if(e.key==='ArrowLeft')go(i-1);
+    if(e.key.toLowerCase()==='f'){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen()}
+  });
+  let sx=0;
+  addEventListener('touchstart',e=>sx=e.touches[0].clientX);
+  addEventListener('touchend',e=>{const d=e.changedTouches[0].clientX-sx;if(Math.abs(d)>50)go(i+(d<0?1:-1))});
+</script>
+</body>
+</html>

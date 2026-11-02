@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Busstreik — Facharbeit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;600;700;800;900&family=Fraunces:ital,opsz,wght@0,9..144,400;1,9..144,500;1,9..144,600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0a1228; --navy:#122047; --navy2:#1b2f5e; --panel:#14254f;
+  --ivory:#eef1f8; --dim:#93a2c4; --gold:#cf9f3a; --gold-br:#ebc265;
+  --red:#c9546a; --green:#36a883; --green-br:#55caa0; --line:rgba(238,241,248,.12);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--ink);color:var(--ivory);font-family:'Archivo',system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;overflow-x:hidden}
+img{display:block;max-width:100%}
+
+.grain{position:fixed;inset:0;z-index:90;pointer-events:none;opacity:.04;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.vignette{position:fixed;inset:0;z-index:85;pointer-events:none;box-shadow:inset 0 0 22vw rgba(0,0,0,.5)}
+.cursor-glow{position:fixed;width:600px;height:600px;border-radius:50%;pointer-events:none;z-index:1;
+  background:radial-gradient(circle,rgba(207,159,58,.09),transparent 62%);transform:translate(-50%,-50%);
+  left:50%;top:50%;mix-blend-mode:screen}
+.prog{position:fixed;top:0;left:0;height:4px;z-index:95;width:0;background:linear-gradient(90deg,var(--gold),var(--gold-br));
+  box-shadow:0 0 14px rgba(207,159,58,.6)}
+.brandbar{position:fixed;top:0;left:0;right:0;z-index:80;display:flex;justify-content:space-between;align-items:center;
+  padding:20px clamp(24px,5vw,64px);mix-blend-mode:difference;color:#fff}
+.logo{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:.22em;font-size:13px}
+.logo .d{width:9px;height:9px;border-radius:50%;background:var(--gold)}
+.sectag{font-size:11px;letter-spacing:.2em;text-transform:uppercase;font-weight:700;opacity:.9}
+
+section{position:relative;min-height:100vh;display:flex;align-items:center;overflow:hidden}
+.pad{padding:clamp(40px,7vw,120px);width:100%;position:relative;z-index:5}
+.bgwrap{position:absolute;inset:-12% 0;z-index:0;will-change:transform}
+.bgwrap .bg{position:absolute;inset:0;background-size:cover;background-position:center}
+.veil-l::after{content:'';position:absolute;inset:0;z-index:1;
+  background:linear-gradient(90deg,rgba(10,18,40,.94),rgba(10,18,40,.6) 44%,rgba(10,18,40,.2) 80%,rgba(10,18,40,.5)),
+  linear-gradient(0deg,rgba(10,18,40,.92),transparent 52%)}
+.veil-c::after{content:'';position:absolute;inset:0;z-index:1;
+  background:radial-gradient(130% 100% at 50% 55%,transparent 15%,rgba(10,18,40,.55) 68%,rgba(10,18,40,.88)),
+  linear-gradient(0deg,rgba(10,18,40,.85),transparent 58%)}
+.navy{background:radial-gradient(120% 120% at 80% 0%,var(--navy),var(--ink) 65%)}
+
+.k{display:inline-flex;align-items:center;gap:14px;font-size:clamp(11px,1vw,13px);letter-spacing:.4em;
+  text-transform:uppercase;color:var(--gold-br);font-weight:600;margin-bottom:22px}
+.k::before{content:'';width:40px;height:1px;background:var(--gold)}
+.k.dk{color:#b8851f}.k.dk::before{background:#b8851f}
+h1,h2{font-family:'Anton',sans-serif;line-height:.9;text-transform:uppercase;letter-spacing:.005em;text-shadow:0 10px 50px rgba(0,0,0,.5)}
+.huge{font-size:clamp(46px,9vw,150px)}
+.big{font-size:clamp(40px,7vw,108px)}
+.g{color:var(--gold-br)}
+.serif{font-family:'Fraunces',serif;font-style:italic;font-weight:500}
+.sub{font-size:clamp(16px,1.6vw,22px);color:var(--dim);max-width:56ch;margin-top:26px;line-height:1.6;text-shadow:0 4px 20px rgba(0,0,0,.6)}
+.center{text-align:center;justify-content:center}.center .sub{margin-inline:auto}
+
+.rv .w{display:inline-block;opacity:0;transform:translateY(55px) rotate(2deg);
+  transition:opacity .8s cubic-bezier(.2,.7,.2,1),transform .8s cubic-bezier(.2,.7,.2,1);transition-delay:calc(var(--i,0)*.07s)}
+.rv.in .w{opacity:1;transform:none}
+.fade{opacity:0;transform:translateY(32px);transition:opacity .9s cubic-bezier(.2,.7,.2,1) .25s,transform .9s cubic-bezier(.2,.7,.2,1) .25s}
+.fade.in{opacity:1;transform:none}
+
+.hero .scrollcue{position:absolute;bottom:32px;left:50%;transform:translateX(-50%);z-index:6;display:flex;
+  flex-direction:column;align-items:center;gap:10px;font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:var(--dim)}
+.hero .mouse{width:22px;height:36px;border:1.5px solid var(--dim);border-radius:12px;position:relative}
+.hero .mouse::after{content:'';position:absolute;top:7px;left:50%;transform:translateX(-50%);width:3px;height:7px;border-radius:2px;
+  background:var(--gold);animation:wheel 1.6s infinite}
+@keyframes wheel{0%{opacity:0;top:7px}30%{opacity:1}60%{opacity:1;top:16px}100%{opacity:0;top:16px}}
+
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:26px;margin-top:48px;max-width:1050px}
+.stats>div{border-top:1px solid var(--line);padding-top:16px}
+.stats b{font-family:'Anton';font-size:clamp(44px,6vw,92px);color:var(--gold-br);display:block;line-height:1}
+.stats span{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin-top:12px;display:block}
+@media(max-width:760px){.stats{grid-template-columns:1fr;gap:18px}}
+
+/* horizontal pin */
+.pin{height:560vh;position:relative}
+.pin-sticky{position:sticky;top:0;height:100vh;overflow:hidden;background:var(--ink)}
+.h-track{display:flex;height:100vh;will-change:transform}
+.h-panel{flex:0 0 100vw;height:100vh;position:relative;display:flex;align-items:center;padding:clamp(40px,8vw,140px);
+  background:radial-gradient(120% 120% at 20% 20%,var(--navy),var(--ink) 70%);border-right:1px solid var(--line)}
+.h-panel .rn{font-family:'Fraunces';font-style:italic;font-size:clamp(60px,10vw,150px);color:var(--gold);line-height:.8}
+.h-panel .pc{max-width:60ch}
+.h-panel .term{font-family:'Anton';font-size:clamp(44px,8vw,120px);text-transform:uppercase;line-height:.92;margin:14px 0 20px}
+.h-panel .def{font-size:clamp(16px,1.6vw,22px);color:var(--dim);line-height:1.6;max-width:42ch}
+.h-panel.intro{justify-content:center;text-align:center}
+.h-panel.intro .pc{max-width:900px;margin:0 auto}
+.counter-chip{position:absolute;top:50%;right:clamp(24px,6vw,90px);z-index:3;font-family:'Fraunces';font-style:italic;
+  font-size:clamp(90px,16vw,230px);color:transparent;-webkit-text-stroke:1.5px rgba(238,241,248,.14);line-height:.8;
+  transform:translateY(-50%);pointer-events:none}
+
+/* steps */
+.steps6{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:50px;max-width:1150px}
+.st{background:linear-gradient(160deg,var(--navy2),var(--navy));border:1px solid var(--line);border-radius:16px;
+  padding:24px;display:flex;gap:16px;align-items:center}
+.st .n{font-family:'Anton';font-size:34px;color:var(--gold);min-width:42px}
+.st h4{font-size:16px;font-weight:700;line-height:1.1}
+@media(max-width:820px){.steps6{grid-template-columns:1fr}}
+
+/* light chart section */
+.light{background:linear-gradient(180deg,#f4f1e8,#e8e3d5);color:#0a1228}
+.light .sub{color:#5a5544}.light .k{color:#b8851f}.light .k::before{background:#b8851f}.light h2{color:#0a1228}
+.mix{display:grid;grid-template-columns:.9fr 1.1fr;gap:clamp(30px,5vw,72px);align-items:center;max-width:1300px;margin:0 auto}
+.bars{display:flex;flex-direction:column;gap:26px}
+.bar .lab{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
+.bar .nm{font-size:15px;letter-spacing:.04em;text-transform:uppercase;font-weight:700}
+.bar .pct{font-family:'Anton';font-size:30px}
+.bar .track{height:18px;border-radius:10px;background:rgba(10,18,40,.08);overflow:hidden}
+.bar .fill{height:100%;width:0;border-radius:10px;transition:width 1.5s cubic-bezier(.2,.8,.2,1)}
+@media(max-width:820px){.mix{grid-template-columns:1fr}}
+
+/* timeline */
+.tl{margin-top:60px;max-width:1150px}
+.tlgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;position:relative}
+.tlnode{position:relative;padding-top:34px}
+.tlnode::before{content:'';position:absolute;top:8px;left:0;width:16px;height:16px;border-radius:50%;background:var(--c,var(--navy2));box-shadow:0 0 0 4px rgba(207,159,58,.12)}
+.tlnode::after{content:'';position:absolute;top:15px;left:16px;right:-20px;height:2px;background:var(--line)}
+.tlnode:last-child::after{display:none}
+.tlnode .date{font-size:13px;letter-spacing:.1em;font-weight:700;color:var(--gold-br)}
+.tlnode h4{font-family:'Anton';font-size:22px;text-transform:uppercase;margin:8px 0 4px}
+.tlnode p{font-size:14px;color:var(--dim)}
+@media(max-width:820px){.tlgrid{grid-template-columns:1fr 1fr}}
+
+/* result */
+.result{background:linear-gradient(160deg,var(--green),#1f6e55)}
+.result .k{color:#eafff6}.result .k::before{background:#eafff6}
+.result h2{color:#fff}.result .sub{color:#d8f5ea}
+.rlist{margin-top:34px;max-width:900px}
+.rlist div{display:flex;gap:16px;align-items:flex-start;padding:16px 0;border-top:1px solid rgba(255,255,255,.18);font-size:clamp(16px,1.5vw,20px);color:#eafff6}
+.rlist div b{font-family:'Anton';color:#fff;min-width:44px}
+
+.lead-list{margin-top:40px;max-width:1000px}
+.lead-list .li{display:flex;gap:18px;align-items:flex-start;padding:20px 0;border-top:1px solid var(--line)}
+.lead-list .li .mk{width:12px;height:12px;background:var(--gold);margin-top:8px;flex:none}
+.lead-list .li p{font-size:clamp(16px,1.6vw,21px);color:var(--ivory);line-height:1.5}
+
+.quellen{background:var(--navy)}
+.ql{margin-top:40px;max-width:1050px}
+.ql a,.ql div{display:block;padding:14px 0;border-top:1px solid var(--line);font-size:15px;color:var(--dim)}
+.ql b{color:var(--ivory);font-weight:700}
+footer{background:var(--ink);border-top:1px solid var(--line);padding:32px clamp(24px,5vw,64px);display:flex;
+  justify-content:space-between;flex-wrap:wrap;gap:12px;color:var(--dim);font-size:13px;min-height:auto}
+</style>
+</head>
+<body>
+<div class="grain"></div><div class="vignette"></div><div class="cursor-glow" id="glow"></div>
+<div class="prog" id="prog"></div>
+<div class="brandbar"><div class="logo"><span class="d"></span>FACHARBEIT · WIPO</div><div class="sectag" id="sectag">Titel</div></div>
+
+<!-- HERO -->
+<section class="hero veil-l" data-tag="Streik als Mittel">
+  <div class="bgwrap para" data-speed="0.18"><div class="bg" data-kb style="background-image:url('IMG_hero')"></div></div>
+  <div class="pad">
+    <span class="k fade">Facharbeit · WiPo · Kolloquium</span>
+    <h1 class="huge rv"><span class="w" style="--i:0">STREIK</span> <span class="w" style="--i:1">ALS</span> <span class="w" style="--i:2">MITTEL</span><br><span class="w" style="--i:3">DER</span> <span class="w g" style="--i:4">INTERESSEN&shy;VERTRETUNG</span></h1>
+    <p class="sub fade">Das Beispiel: Der Busstreik in Neumünster 2026. Scrolle und erlebe, wie ein echter Arbeitskampf abläuft.</p>
+  </div>
+  <div class="scrollcue"><div class="mouse"></div>Scrollen</div>
+</section>
+
+<!-- FACTS -->
+<section class="navy" data-tag="Teil 1 · Einleitung">
+  <div class="pad">
+    <span class="k fade">Teil 1 · Einleitung</span>
+    <h2 class="big rv"><span class="w" style="--i:0">WORUM</span> <span class="w" style="--i:1">GEHT</span> <span class="w serif g" style="--i:2">es?</span></h2>
+    <p class="sub fade">Am 8. und 9. September 2026 legten Busfahrer:innen in Schleswig-Holstein die Arbeit nieder. In Neumünster fahren die Busse der Firma SWN.</p>
+    <div class="stats fade">
+      <div><b class="count" data-to="1800" data-pre="~">0</b><span>Beschäftigte im Streik</span></div>
+      <div><b class="count" data-to="4">0</b><span>Städte betroffen</span></div>
+      <div><b class="count" data-to="48" data-suf=" h">0</b><span>erster Warnstreik</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- RESEARCH QUESTION -->
+<section class="navy center" data-tag="Forschungsfrage">
+  <div class="pad center">
+    <span class="k fade">Meine Forschungsfrage</span>
+    <h2 class="rv" style="font-family:'Fraunces';font-style:italic;font-weight:500;text-transform:none;font-size:clamp(34px,6vw,86px);line-height:1.1;color:#fff;text-shadow:0 10px 50px rgba(0,0,0,.5)"><span class="w" style="--i:0">„Warum</span> <span class="w" style="--i:1">hilft</span> <span class="w" style="--i:2">ein</span> <span class="w g" style="--i:3">Streik</span> <span class="w" style="--i:4">den</span> <span class="w g" style="--i:5">Busfahrer:innen?“</span></h2>
+  </div>
+</section>
+
+<!-- GRUNDWISSEN horizontal pin -->
+<div class="pin" data-tag="Teil 2 · Grundwissen">
+  <div class="pin-sticky">
+    <div class="counter-chip" id="chip"></div>
+    <div class="h-track" id="track">
+      <div class="h-panel intro"><div class="pc">
+        <div class="k" style="justify-content:center">Teil 2 · Grundwissen</div>
+        <div class="term">Vier <span class="serif g">Begriffe</span></div>
+        <p class="def" style="margin-inline:auto">Scrolle weiter — die vier Grundlagen eines Arbeitskampfs ziehen vorbei.</p>
+      </div></div>
+      <div class="h-panel"><div class="rn">I</div><div class="pc"><div class="term">Arbeitskampf</div><p class="def">Ein Streit um Lohn und Arbeit. Arbeitnehmer:innen und Arbeitgeber sind sich nicht einig. Der Streik ist das stärkste Mittel, wenn Verhandlungen scheitern.</p></div></div>
+      <div class="h-panel"><div class="rn">II</div><div class="pc"><div class="term">Tarifvertrag</div><p class="def">Regelt Lohn und Arbeitszeit – für viele Menschen, nicht nur für eine Person. Er gilt nur für eine bestimmte Zeit; danach muss neu verhandelt werden.</p></div></div>
+      <div class="h-panel"><div class="rn">III</div><div class="pc"><div class="term">Die Parteien</div><p class="def">Die Gewerkschaft (z.&nbsp;B. ver.di) spricht für die Beschäftigten. Ihr gegenüber steht der Arbeitgeberverband (KAV&nbsp;SH), der für mehrere Firmen verhandelt.</p></div></div>
+      <div class="h-panel"><div class="rn">IV</div><div class="pc"><div class="term">Streikrecht</div><p class="def">Streiken ist erlaubt – es steht im Grundgesetz, Artikel&nbsp;9. Aber nur für bessere Löhne oder Arbeit, nicht für private oder politische Ziele.</p></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- STRIKE PROCESS -->
+<section class="navy" data-tag="Ablauf eines Streiks">
+  <div class="pad">
+    <span class="k fade">Teil 2 · Grundwissen</span>
+    <h2 class="big rv"><span class="w" style="--i:0">WIE</span> <span class="w" style="--i:1">LÄUFT</span> <span class="w" style="--i:2">EIN</span> <span class="w serif g" style="--i:3">Streik</span> <span class="w" style="--i:4">ab?</span></h2>
+    <div class="steps6 fade">
+      <div class="st"><div class="n">1</div><h4>Verhandlung scheitert</h4></div>
+      <div class="st"><div class="n">2</div><h4>Warnstreik</h4></div>
+      <div class="st"><div class="n">3</div><h4>Abstimmung (≥ 75 %)</h4></div>
+      <div class="st"><div class="n">4</div><h4>Streik</h4></div>
+      <div class="st"><div class="n">5</div><h4>Schlichter hilft</h4></div>
+      <div class="st" style="border-color:var(--green)"><div class="n" style="color:var(--green-br)">6</div><h4>Neuer Vertrag</h4></div>
+    </div>
+  </div>
+</section>
+
+<!-- NEUMÜNSTER who/why -->
+<section class="veil-l" data-tag="Teil 3 · Das Beispiel">
+  <div class="bgwrap para" data-speed="0.14"><div class="bg" data-kb style="background-image:url('IMG_crowd')"></div></div>
+  <div class="pad">
+    <span class="k fade">Teil 3 · Beispiel Neumünster</span>
+    <h2 class="big rv"><span class="w" style="--i:0">WER</span> <span class="w" style="--i:1">&</span> <span class="w serif g" style="--i:2">warum?</span></h2>
+    <p class="sub fade">ver.di rief zum Streik auf – gegenüber vier Busfirmen (in Neumünster: SWN), vertreten vom Arbeitgeberverband KAV&nbsp;SH. Der alte Tarifvertrag lief am 30.&nbsp;Juni 2026 aus, die Verhandlung scheiterte. Deshalb kam es zum Warnstreik.</p>
+  </div>
+</section>
+
+<!-- WAGE CHART -->
+<section class="light" data-tag="Die Zahlen">
+  <div class="pad">
+    <div class="mix">
+      <div>
+        <span class="k fade">Teil 3 · Die Zahlen</span>
+        <h2 class="big rv"><span class="w" style="--i:0">DIE</span> <span class="w" style="--i:1">ZAHLEN</span><br><span class="w serif" style="--i:2;color:#b8851f">im Vergleich</span></h2>
+        <p class="sub fade">Geforderte, angebotene und vereinbarte Lohnerhöhung – in Prozent.</p>
+      </div>
+      <div class="bars fade" id="bars">
+        <div class="bar"><div class="lab"><span class="nm">ver.di – Forderung</span><span class="pct count" data-to="65" data-div="10" data-suf=" %" style="color:#cf9f3a">0</span></div><div class="track"><div class="fill" data-w="81" style="background:linear-gradient(90deg,#cf9f3a,#ebc265)"></div></div></div>
+        <div class="bar"><div class="lab"><span class="nm">Arbeitgeber – Angebot</span><span class="pct count" data-to="44" data-div="10" data-suf=" %" style="color:#46587e">0</span></div><div class="track"><div class="fill" data-w="55" style="background:linear-gradient(90deg,#46587e,#6d7fa6)"></div></div></div>
+        <div class="bar"><div class="lab"><span class="nm">Einigung (ab 1.7.2026)</span><span class="pct count" data-to="30" data-div="10" data-suf=" %" style="color:#2e8b6b">0</span></div><div class="track"><div class="fill" data-w="37" style="background:linear-gradient(90deg,#2e8b6b,#55caa0)"></div></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TIMELINE -->
+<section class="navy" data-tag="Eskalation">
+  <div class="pad">
+    <span class="k fade">Teil 3 · Beispiel Neumünster</span>
+    <h2 class="big rv"><span class="w" style="--i:0">DER</span> <span class="w" style="--i:1">STREIK</span> <span class="w serif g" style="--i:2">wird stärker</span></h2>
+    <div class="tl fade">
+      <div class="tlgrid">
+        <div class="tlnode" style="--c:#1b2f5e"><div class="date">8./9.9.2026</div><h4>1. Warnstreik</h4><p>48 Stunden Ausstand</p></div>
+        <div class="tlnode" style="--c:#1b2f5e"><div class="date">22.9.2026</div><h4>2. Warnstreik</h4><p>Ein ganzer Tag</p></div>
+        <div class="tlnode" style="--c:#c9546a"><div class="date">Drohung</div><h4>5-Tage-Streik</h4><p>angekündigt</p></div>
+        <div class="tlnode" style="--c:#36a883"><div class="date">29.9.2026</div><h4>Einigung</h4><p>zuerst in Flensburg</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- RESULT -->
+<section class="result veil-c" data-tag="Das Ergebnis">
+  <div class="bgwrap para" data-speed="0.12" style="opacity:.25"><div class="bg" data-kb style="background-image:url('IMG_handshake')"></div></div>
+  <div class="pad">
+    <span class="k fade">Das Ergebnis</span>
+    <h2 class="huge rv"><span class="w" style="--i:0">DER</span> <span class="w" style="--i:1">STREIK</span> <span class="w" style="--i:2">IST</span><br><span class="w" style="--i:3">BEENDET.</span></h2>
+    <div class="rlist fade">
+      <div><b>+3,0 %</b><span>Lohn – rückwirkend zum 1. Juli 2026.</span></div>
+      <div><b>2027</b><span>Eine weitere Erhöhung folgt am 1. April 2027.</span></div>
+      <div><b>✓</b><span>Ein 5-Tage-Streik wurde dadurch verhindert.</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ANALYSE -->
+<section class="navy" data-tag="Teil 4 · Analyse">
+  <div class="pad">
+    <span class="k fade">Teil 4 · Analyse</span>
+    <h2 class="big rv"><span class="w" style="--i:0">WARUM</span> <span class="w" style="--i:1">HAT</span> <span class="w" style="--i:2">ER</span> <span class="w serif g" style="--i:3">gewirkt?</span></h2>
+    <div class="lead-list fade">
+      <div class="li"><div class="mk"></div><p>Der Streik machte Druck: Ohne Busse ging es für viele Menschen nicht.</p></div>
+      <div class="li"><div class="mk"></div><p>Auch Eltern, Schüler:innen und der Verkehrsminister wollten eine Lösung.</p></div>
+      <div class="li"><div class="mk"></div><p>Die Drohung mit einem langen Streik erhöhte den Druck zusätzlich.</p></div>
+      <div class="li"><div class="mk"></div><p>Das Ergebnis ist ein Kompromiss – mehr als das erste Angebot, aber nicht alles, was ver.di wollte.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- FAZIT -->
+<section class="navy center" data-tag="Fazit & Ausblick">
+  <div class="pad center">
+    <span class="k fade">Fazit & Ausblick</span>
+    <h2 class="huge rv"><span class="w" style="--i:0">WAS</span> <span class="w serif g" style="--i:1">bleibt</span></h2>
+    <p class="sub fade">Ein Streik ist ein wirksames Mittel – aber er hat auch Grenzen. Das Ergebnis kam durch Druck und die Bereitschaft beider Seiten, nachzugeben. Es fehlen weiter viele Busfahrer:innen – das bleibt auch in Zukunft ein Problem.</p>
+  </div>
+</section>
+
+<!-- QUELLEN -->
+<section class="quellen" data-tag="Quellen" style="min-height:auto">
+  <div class="pad">
+    <span class="k fade">Quellen</span>
+    <h2 class="big rv" style="font-size:clamp(34px,5vw,72px)"><span class="w" style="--i:0">BELEGE</span></h2>
+    <div class="ql fade">
+      <div><b>t-online.de</b> (08.09.2026): Busstreik legt Städte in Schleswig-Holstein lahm</div>
+      <div><b>t-online.de</b> (09.09.2026): Busstreik in Schleswig-Holstein: Kielerin wird deutlich</div>
+      <div><b>Verbraucherschutzforum.berlin</b> (07.09.2026): Bus-Chaos droht in Schleswig-Holstein</div>
+      <div><b>Verbraucherschutzforum.berlin</b> (22.09.2026): Bus-Warnstreik legt Nahverkehr lahm</div>
+      <div><b>hl-live.de</b> (29.09.2026): Einigung bei den Busfahrern – keine weiteren Warnstreiks</div>
+      <div><b>ad-hoc-news.de</b> (29.09.2026): Tarifabschluss bringt 1.800 Beschäftigten mehr Lohn</div>
+    </div>
+    <p class="sub fade" style="font-size:14px;margin-top:20px">Alle Quellen zuletzt abgerufen am 30.09.2026.</p>
+  </div>
+</section>
+<footer>
+  <div class="logo"><span class="d"></span>FACHARBEIT · WIPO · KOLLOQUIUM</div>
+  <div>Streik als Mittel der Interessenvertretung</div>
+  <div>Neumünster · 2026</div>
+</footer>
+
+<script>
+const prog=document.getElementById('prog'), glow=document.getElementById('glow'), sectag=document.getElementById('sectag');
+const pin=document.querySelector('.pin'), track=document.getElementById('track'), chip=document.getElementById('chip');
+const paras=[...document.querySelectorAll('.para')], kbs=[...document.querySelectorAll('[data-kb]')], tagged=[...document.querySelectorAll('[data-tag]')];
+const vh=()=>innerHeight, vw=()=>innerWidth, clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const romans=['','I','II','III','IV'];
+let lastY=scrollY, ticking=false;
+function onScroll(){ if(ticking)return; ticking=true;
+  requestAnimationFrame(()=>{
+    const y=scrollY, h=document.documentElement.scrollHeight-vh();
+    prog.style.width=(y/h*100)+'%';
+    paras.forEach(el=>{ const r=el.getBoundingClientRect(); const off=(r.top+r.height/2 - vh()/2);
+      el.style.transform='translateY('+(off*(parseFloat(el.dataset.speed||.12))*-1)+'px)'; });
+    kbs.forEach(el=>{ const sec=el.closest('section')||el.closest('.h-panel'); if(!sec)return;
+      const r=sec.getBoundingClientRect(); const p=1-clamp((r.top+r.height)/(vh()+r.height),0,1);
+      el.style.transform='scale('+(1.05+p*0.12)+')'; });
+    if(pin){ const pr=pin.getBoundingClientRect(); const total=pin.offsetHeight-vh();
+      const sc=clamp(-pr.top,0,total); const p=total>0?sc/total:0; const maxX=track.scrollWidth-vw();
+      track.style.transform='translateX('+(-p*maxX)+'px)';
+      const panels=track.children.length, idx=clamp(Math.floor(p*panels),0,panels-1);
+      chip.textContent=romans[idx]||''; }
+    let cur=tagged[0]; for(const s of tagged){ const r=s.getBoundingClientRect(); if(r.top<=vh()*0.4) cur=s; }
+    if(cur&&cur.dataset.tag) sectag.textContent=cur.dataset.tag;
+    ticking=false;
+  });
+}
+addEventListener('scroll',onScroll,{passive:true}); addEventListener('resize',onScroll); onScroll();
+let gx=innerWidth/2, gy=innerHeight/2, cx=gx, cy=gy;
+addEventListener('mousemove',e=>{gx=e.clientX;gy=e.clientY;});
+(function g(){ cx+=(gx-cx)*.12; cy+=(gy-cy)*.12; glow.style.left=cx+'px'; glow.style.top=cy+'px'; requestAnimationFrame(g);})();
+const io=new IntersectionObserver(es=>{ es.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('in');
+  if(e.target.id==='bars') fillBars();
+  e.target.querySelectorAll?.('.count').forEach(runCount); if(e.target.classList.contains('count'))runCount(e.target);
+  io.unobserve(e.target);} }); },{threshold:.2});
+document.querySelectorAll('.rv,.fade').forEach(el=>io.observe(el));
+function runCount(el){ if(el.dataset.done)return; el.dataset.done=1;
+  const to=+el.dataset.to, pre=el.dataset.pre||'', suf=el.dataset.suf||'', div=+el.dataset.div||1; let t0=null;
+  function s(ts){ if(!t0)t0=ts; const p=Math.min((ts-t0)/1600,1); let v=(1-Math.pow(1-p,3))*to/div;
+    v = div>1 ? v.toFixed(1).replace('.',',') : Math.round(v).toLocaleString('de-DE');
+    el.textContent=pre+v+suf; if(p<1)requestAnimationFrame(s);} requestAnimationFrame(s);
+}
+let barsDone=false; function fillBars(){ if(barsDone)return; barsDone=true;
+  document.querySelectorAll('#bars .fill').forEach((f,i)=>setTimeout(()=>f.style.width=f.dataset.w+'%',i*160)); }
+</script>
+</body>
+</html>
